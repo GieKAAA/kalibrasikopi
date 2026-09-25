@@ -1,0 +1,16 @@
+node_modules
+dist
+dev-dist
+*.local
+.DS_Store
+coverage
+.vite
+# Android build output (proyek android/ sendiri tetap di-commit)
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+android/.idea
+*.apk
+*.aab
+*.tsbuildinfo

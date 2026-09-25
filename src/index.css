@@ -1,0 +1,168 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-crema: var(--crema);
+  --color-fine: var(--fine);
+  --color-coarse: var(--coarse);
+  --color-hold: var(--hold);
+  --color-sour: var(--sour);
+  --color-balanced: var(--balanced);
+  --color-bitter: var(--bitter);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f4eee5;
+  --surface: #fffcf7;
+  --surface-2: #efe6da;
+  --line: #e1d4c3;
+  --ink: #2a1d15;
+  --muted: #76655a;
+  --brand: #6b4226;
+  --brand-ink: #fffaf3;
+  --brand-soft: #eadbc8;
+  --crema: #c27a2e;
+  --fine: #2563a8;
+  --coarse: #c0561b;
+  --hold: #2f7d4f;
+  --sour: #b98f0a;
+  --balanced: #2f7d4f;
+  --bitter: #7a3b2e;
+  --danger: #b42318;
+  --warn: #b25e09;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --bg: #14100d;
+  --surface: #1e1713;
+  --surface-2: #29201a;
+  --line: #3a2e26;
+  --ink: #f4ece3;
+  --muted: #ae9f91;
+  --brand: #dca46b;
+  --brand-ink: #1a120d;
+  --brand-soft: #3a2b20;
+  --crema: #e3a45c;
+  --fine: #6ea8ea;
+  --coarse: #f28c4e;
+  --hold: #5cc38a;
+  --sour: #e2c04a;
+  --balanced: #5cc38a;
+  --bitter: #db8a73;
+  --danger: #f97066;
+  --warn: #f5a524;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Ruang aman status bar / notch (Android edge-to-edge, iPad). */
+#root {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+[role='button'] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Slider rasa: thumb besar agar mudah digeser dengan jari. */
+input[type='range'].taste-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+}
+input[type='range'].taste-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sour), var(--balanced) 50%, var(--bitter));
+}
+input[type='range'].taste-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sour), var(--balanced) 50%, var(--bitter));
+}
+input[type='range'].taste-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 32px;
+  height: 32px;
+  margin-top: -11px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+}
+input[type='range'].taste-range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+}
+
+/* Hanya untuk elemen tanpa padding vertikal sendiri (kelas ini tidak ber-layer). */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+.timer-running {
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
