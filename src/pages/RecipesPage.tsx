@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   BookOpen,
   Coffee,
-  Droplets,
   Flame,
   Gauge,
   Leaf,
@@ -27,7 +26,6 @@ export const CATEGORY_STYLE: Record<RecipeCategory, { icon: typeof Coffee; color
   Espresso: { icon: Coffee, color: '#6b4226' },
   'Kopi Susu': { icon: Milk, color: '#a0703f' },
   Signature: { icon: Sparkles, color: '#c27a2e' },
-  'Manual Brew': { icon: Droplets, color: '#2f6f8f' },
   'Non-Kopi': { icon: Leaf, color: '#3f7f4f' },
 };
 

@@ -12,7 +12,7 @@ export interface User {
   createdAt: string;
 }
 
-export const RECIPE_CATEGORIES = ['Espresso', 'Kopi Susu', 'Signature', 'Manual Brew', 'Non-Kopi'] as const;
+export const RECIPE_CATEGORIES = ['Espresso', 'Kopi Susu', 'Signature', 'Non-Kopi'] as const;
 export type RecipeCategory = (typeof RECIPE_CATEGORIES)[number];
 
 export interface Ingredient {

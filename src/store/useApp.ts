@@ -5,6 +5,7 @@ import { createDefaultKnowledgeBase } from '../fuzzy/defaultKb';
 import type { KnowledgeBase } from '../fuzzy/types';
 import { hashPassword, randomHex, uid } from '../lib/auth';
 import { seedRecipes } from './seedRecipes';
+import { RECIPE_CATEGORIES } from './types';
 import type { CalibrationDraft, CalibrationSession, Recipe, Role, Shot, ThemePref, User } from './types';
 
 export const DEFAULT_DRAFT: CalibrationDraft = { dose: 18, yield: 36, time: 0, taste: null, grindSetting: null };
@@ -177,7 +178,13 @@ export const useApp = create<AppState>()(
     }),
     {
       name: 'kalibrasikopi:v1',
-      version: 1,
+      version: 2,
+      // v2: kategori Manual Brew dihapus (di luar ruang lingkup penelitian).
+      migrate: (persisted, version) => {
+        const data = persisted as Data;
+        if (version < 2 && Array.isArray(data?.recipes)) data.recipes = data.recipes.filter((r) => RECIPE_CATEGORIES.includes(r.category));
+        return data;
+      },
       storage: createJSONStorage(() => localStorage),
       partialize: (s): Data => ({
         users: s.users,
@@ -228,7 +235,7 @@ function validateBackup(raw: unknown): Omit<Data, 'currentUserId'> {
   if (!d.kb || !d.kb.inputs || !Array.isArray(d.kb.rules)) throw new Error('Basis pengetahuan tidak valid.');
   return {
     users: d.users,
-    recipes: d.recipes,
+    recipes: d.recipes.filter((r) => RECIPE_CATEGORIES.includes(r.category)),
     kb: d.kb,
     grinder: { ...DEFAULT_GRINDER, ...d.grinder },
     sessions: d.sessions,
