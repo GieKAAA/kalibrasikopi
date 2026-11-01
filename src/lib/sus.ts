@@ -1,4 +1,4 @@
-/** Pernyataan kuesioner System Usability Scale sesuai Tabel III.2 naskah. */
+/** Pernyataan kuesioner System Usability Scale sesuai Tabel 3.2 naskah. */
 export const SUS_STATEMENTS = [
   'Saya pikir saya akan sering menggunakan aplikasi Smart Assistant ini untuk membantu pekerjaan di meja bar.',
   'Saya merasa aplikasi Smart Assistant ini terlalu rumit untuk digunakan dalam alur kerja kalibrasi harian.',
@@ -37,7 +37,7 @@ export function scoreSus(answers: number[]): SusScore {
   return { converted, oddTotal, evenTotal, total, score: total * 2.5 };
 }
 
-/** Interpretasi skor menurut Tabel III.3. */
+/** Interpretasi skor menurut Tabel 3.3. */
 export function susCategory(score: number): string {
   if (score >= 85) return 'Excellent / Grade A';
   if (score >= 70) return 'Good / Grade B';

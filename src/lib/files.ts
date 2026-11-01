@@ -33,13 +33,17 @@ export function readTextFile(file: File): Promise<string> {
   });
 }
 
+/**
+ * CSV untuk Excel berlokal Indonesia: pemisah titik koma, angka dengan koma desimal, dan BOM
+ * agar UTF-8 terbaca dengan benar.
+ */
 export function toCsv(rows: (string | number | null | undefined)[][]): string {
   const esc = (v: string | number | null | undefined) => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const s =
+      v === null || v === undefined ? '' : typeof v === 'number' ? (Number.isFinite(v) ? String(v).replace('.', ',') : '') : String(v);
+    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  // BOM agar Excel membaca UTF-8 dengan benar.
-  return '﻿' + rows.map((r) => r.map(esc).join(',')).join('\n');
+  return '\uFEFF' + rows.map((r) => r.map(esc).join(';')).join('\n');
 }
 
 export function stamp(): string {

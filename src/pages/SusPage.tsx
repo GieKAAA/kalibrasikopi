@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, ConfirmDialog, cx, EmptyState, Field, PageHeader, Segmented, SectionTitle, Snackbar, TextInput } from '../components/ui';
 import { saveTextFile, stamp, toCsv } from '../lib/files';
-import { fmtDateTime, fmtMath } from '../lib/format';
+import { fmtDateTime, fmtFixed } from '../lib/format';
 import { isCompleteSus, LIKERT_LABELS, scoreSus, SUS_STATEMENTS, susCategory } from '../lib/sus';
 import type { SusResponse } from '../store/types';
 import { useApp, useCurrentUser, useIsHead } from '../store/useApp';
 
 type Tab = 'isi' | 'rekap';
 
-/** Kuesioner SUS (Tabel III.2). Responden hanya melihat pernyataan; skor dan rekap hanya untuk Head Barista. */
+/** Kuesioner SUS (Tabel 3.2). Responden hanya melihat pernyataan; skor dan rekap hanya untuk Head Barista. */
 export function SusPage() {
   const responses = useApp((s) => s.susResponses);
   const isHead = useIsHead();
@@ -177,7 +177,7 @@ function SusRecap({ responses }: { responses: SusResponse[] }) {
                     </td>
                   ))}
                   <td className="py-2 pr-2 text-right">{s.total}</td>
-                  <td className="py-2 pr-2 text-right font-semibold">{fmtMath(s.score, 2)}</td>
+                  <td className="py-2 pr-2 text-right font-semibold">{fmtFixed(s.score, 2)}</td>
                   <td className="py-2 pr-2">
                     <Badge>{susCategory(s.score)}</Badge>
                   </td>
@@ -198,11 +198,11 @@ function SusRecap({ responses }: { responses: SusResponse[] }) {
       <Card className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
         <div>
           <div className="text-sm text-muted">Skor rata-rata ({rows.length} responden)</div>
-          <div className="readout mt-1.5 text-[40px]">{fmtMath(mean, 2)}</div>
+          <div className="readout mt-1.5 text-[40px]">{fmtFixed(mean, 2)}</div>
           <div className="mt-1.5 font-semibold">{susCategory(mean)}</div>
         </div>
         <p className="text-sm leading-relaxed text-muted sm:border-l sm:border-line sm:pl-5">
-          Kategori Tabel III.3: 85–100 Excellent (Grade A) · 70–84 Good (Grade B) · 68–69 Acceptable threshold · 50–67 Poor · di bawah 50 Not acceptable.
+          Kategori Tabel 3.3: 85–100 Excellent (Grade A) · 70–84 Good (Grade B) · 68–69 Acceptable threshold · 50–67 Poor · di bawah 50 Not acceptable.
         </p>
       </Card>
 

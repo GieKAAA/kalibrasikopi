@@ -1,5 +1,8 @@
 # Sinkronisasi Aplikasi dengan Draf Hasil Revisi 2
 
+> Seluruh perbaikan di bawah sudah diterapkan pada naskah **Draf Hasil REVISI-3**. Contoh perhitungan pada naskah
+> memakai shot uji ke-9 (18 g / 45 g / 22 s / −1; R46 α 0,333, R47 α 0,5; ΣA 1,1389; ΣM −1,6883; z* −1,482 → perhalus 1 klik).
+
 Catatan ini memetakan komentar pembimbing pada *Draf Hasil Revisi 2* ke perubahan aplikasi, dan
 menyajikan keluaran aplikasi untuk data yang dipakai di naskah. Semua angka di bawah dihasilkan
 oleh mesin inferensi aplikasi dengan basis pengetahuan bawaan, grinder 1 step = 1 klik.
