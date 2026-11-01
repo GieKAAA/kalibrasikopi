@@ -43,33 +43,21 @@ export function ShotTimer({ onStop, targetRange }: { onStop: (seconds: number) =
   const over = targetRange && elapsed > targetRange[1];
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface-2/60 p-3">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={running ? 'Stop timer' : 'Mulai timer'}
-        className={cx(
-          'flex h-20 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl text-sm font-bold uppercase tracking-wide transition active:scale-95',
-          running ? 'timer-running bg-danger text-white' : 'bg-brand text-brand-ink',
-        )}
-      >
-        {running ? <Square className="size-7" fill="currentColor" /> : <Play className="size-7" fill="currentColor" />}
-        {running ? 'Stop' : 'Mulai'}
-      </button>
+    <div className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted">Timer ekstraksi</div>
+        <div className="text-[15px] font-semibold">Timer ekstraksi</div>
         <div
           className={cx(
-            'tabular text-5xl leading-none font-bold tracking-tight',
+            'readout mt-1 text-[44px]',
             running && inWindow && 'text-hold',
             running && over && 'text-danger',
           )}
         >
           {fmtFixed(elapsed, 1)}
-          <span className="ml-1 text-xl text-muted">s</span>
+          <span className="ml-1 text-lg font-medium tracking-normal text-muted">s</span>
         </div>
         {targetRange && (
-          <div className="mt-1 text-xs text-muted">
+          <div className="mt-1 text-sm text-muted">
             Target {targetRange[0]}–{targetRange[1]} detik
           </div>
         )}
@@ -79,9 +67,21 @@ export function ShotTimer({ onStop, targetRange }: { onStop: (seconds: number) =
         aria-label="Reset timer"
         disabled={running || elapsed === 0}
         onClick={() => setElapsed(0)}
-        className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface disabled:opacity-30"
+        className="flex size-12 items-center justify-center rounded-lg text-muted hover:bg-surface-2 disabled:opacity-30"
       >
         <RotateCcw className="size-5" />
+      </button>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={running ? 'Stop timer' : 'Mulai timer'}
+        className={cx(
+          'flex h-16 w-28 shrink-0 items-center justify-center gap-2 rounded-lg text-base font-semibold transition active:scale-[0.98] sm:w-32',
+          running ? 'timer-running bg-danger text-white' : 'bg-brand text-brand-ink',
+        )}
+      >
+        {running ? <Square className="size-5" fill="currentColor" /> : <Play className="size-5" fill="currentColor" />}
+        {running ? 'Stop' : 'Mulai'}
       </button>
     </div>
   );

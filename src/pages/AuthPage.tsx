@@ -1,4 +1,4 @@
-import { BookOpen, BrainCircuit, Gauge, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Brand } from '../components/Logo';
 import { Button, Field, TextInput } from '../components/ui';
@@ -10,37 +10,16 @@ export function AuthPage() {
   const users = useApp((s) => s.users);
   const setup = users.length === 0;
   return (
-    <div className="grid min-h-full lg:grid-cols-[1.1fr_1fr]">
-      <aside className="relative hidden overflow-hidden bg-[#2a1d15] p-12 text-[#f4ece3] lg:flex lg:flex-col lg:justify-between">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-40 -bottom-40 size-[560px] rounded-full opacity-40"
-          style={{ background: 'radial-gradient(circle, #c27a2e 0%, transparent 65%)' }}
-        />
-        <div className="relative [--brand:#dca46b] [--brand-ink:#1a120d] [--muted:#c9b8a8]">
-          <Brand />
-        </div>
-        <div className="relative max-w-lg">
-          <h1 className="font-display text-5xl leading-[1.05] font-semibold">Setiap shot, terkalibrasi seperti di tangan Head Barista.</h1>
-          <p className="mt-5 text-lg text-[#d8c8b8]">
-            Asisten digital meja bar: buku resep standar dan kalibrasi espresso berbasis Logika Fuzzy Mamdani.
-          </p>
-          <ul className="mt-8 space-y-3 text-[#e9dccf]">
-            <li className="flex items-center gap-3"><Gauge className="size-5 text-[#dca46b]" /> Rekomendasi grind size dari dose, yield, waktu &amp; rasa</li>
-            <li className="flex items-center gap-3"><BookOpen className="size-5 text-[#dca46b]" /> Resep standar dengan Mode Seduh langkah demi langkah</li>
-            <li className="flex items-center gap-3"><BrainCircuit className="size-5 text-[#dca46b]" /> Basis pengetahuan pakar yang transparan &amp; bisa divalidasi</li>
-          </ul>
-        </div>
-        <p className="relative text-sm text-[#a8988a]">Data tersimpan di perangkat ini dan tetap berjalan tanpa internet.</p>
-      </aside>
-      <div className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
+    <div className="flex min-h-full flex-col">
+      <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
             <Brand />
           </div>
           {setup ? <SetupForm /> : <LoginForm />}
         </div>
       </div>
+      <p className="safe-bottom px-6 pb-6 text-center text-sm text-muted">Data tersimpan di perangkat ini dan tetap berjalan tanpa internet.</p>
     </div>
   );
 }
@@ -70,7 +49,7 @@ function LoginForm() {
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       <div>
-        <h2 className="font-display text-3xl font-semibold">Masuk</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Masuk</h2>
         <p className="mt-1 text-muted">Gunakan akun barista yang dibuat oleh Head Barista.</p>
       </div>
       <Field label="Email">
@@ -109,9 +88,9 @@ function SetupForm() {
   return (
     <form onSubmit={submit} noValidate className="space-y-4">
       <div>
-        <h2 className="font-display text-3xl font-semibold">Selamat datang</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Buat akun Head Barista</h2>
         <p className="mt-1 text-muted">
-          Buat akun <b className="text-ink">Head Barista</b> untuk perangkat ini. Akun barista lain bisa ditambahkan di menu Pengaturan.
+          Perangkat ini belum punya akun. Akun pertama menjadi Head Barista; akun barista lain ditambahkan dari menu Head Barista.
         </p>
       </div>
       <Field label="Nama lengkap">

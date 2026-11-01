@@ -1,140 +1,180 @@
-import { ArrowRight, BookOpen, BrainCircuit, ClipboardList, Gauge, History, Settings } from 'lucide-react';
+import { ArrowRight, ChevronRight } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { directionColor } from '../components/charts/colors';
-import { Badge, Card, PageHeader, SectionTitle } from '../components/ui';
-import { fmtMath, fmtNum } from '../lib/format';
+import { Card, LinkButton, PageHeader, SectionTitle } from '../components/ui';
+import { tasteLabel } from '../fuzzy/advice';
+import { fmtDateTime, fmtNum } from '../lib/format';
 import { agreement, isDialedIn } from '../lib/stats';
-import { useApp, useCurrentUser } from '../store/useApp';
+import { RECIPE_CATEGORIES } from '../store/types';
+import { useApp, useCurrentUser, useIsHead } from '../store/useApp';
 
-/** Halaman utama setelah masuk: memilih modul Kalibrasi (Fuzzy Mamdani) atau Resep, sesuai alur Gambar III.1. */
+function greeting(d = new Date()) {
+  const h = d.getHours();
+  if (h < 11) return 'Selamat pagi';
+  if (h < 15) return 'Selamat siang';
+  if (h < 18) return 'Selamat sore';
+  return 'Selamat malam';
+}
+
+/** Halaman utama setelah masuk: Modul 1 (Kalibrasi) dan Modul 2 (Resep), sesuai alur Gambar III.1. */
 export function DashboardPage() {
   const user = useCurrentUser();
+  const isHead = useIsHead();
   const sessions = useApp((s) => s.sessions);
   const recipes = useApp((s) => s.recipes);
   const activeSessionId = useApp((s) => s.activeSessionId);
   const grinder = useApp((s) => s.grinder);
+  const draft = useApp((s) => s.draft);
+  const kb = useApp((s) => s.kb);
   const sus = useApp((s) => s.susResponses);
   const active = sessions.find((s) => s.id === activeSessionId) ?? null;
-  const allShots = sessions.flatMap((s) => s.shots.map((x) => ({ ...x, bean: s.beanName })));
-  const last = [...allShots].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const shots = sessions
+    .flatMap((s) => s.shots.map((x) => ({ ...x, bean: s.beanName })))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const last = shots[0];
+  const unjudged = shots.filter((s) => !s.expertDecision).length;
   const agr = agreement(sessions);
-  const dialed = allShots.filter(isDialedIn).length;
   const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const unit = grinder.unitLabel;
+  const setting = draft.grindSetting;
+  const dirText = (d: (typeof shots)[number]) =>
+    isDialedIn(d) ? 'Terkalibrasi' : d.direction === 'tetap' ? 'Tetap' : `${d.direction === 'halus' ? 'Perhalus' : 'Perkasar'} ${fmtNum(d.amount, 2)} ${unit}`;
 
   return (
     <>
-      <PageHeader
-        title={`Halo, ${user?.name.split(' ')[0] ?? 'Barista'}`}
-        subtitle={`${today} · ${user?.role === 'head' ? 'Head Barista' : 'Barista'}`}
-      />
+      <PageHeader title={`${greeting()}, ${user?.name.split(' ')[0] ?? 'Barista'}`} subtitle={`${today} · ${user?.role === 'head' ? 'Head Barista' : 'Barista'}`} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ModuleCard
-          to="/kalibrasi"
-          icon={<Gauge className="size-8" />}
-          tag="Modul 1"
-          title="Kalibrasi Espresso"
-          desc="Input dose, yield, waktu ekstraksi, dan profil rasa. Smart Assistant (Fuzzy Mamdani) merekomendasikan arah dan besar putaran grinder."
-          meta={active ? `Sesi aktif: ${active.beanName} · ${active.shots.length} shot` : 'Belum ada sesi aktif'}
-          accent="#6b4226"
-        />
-        <ModuleCard
-          to="/resep"
-          icon={<BookOpen className="size-8" />}
-          tag="Modul 2"
-          title="Resep Menu"
-          desc="Komposisi, takaran gramasi, urutan pembuatan (SOP), dan Mode Seduh langkah demi langkah untuk menu kedai."
-          meta={`${recipes.length} resep tersimpan`}
-          accent="#c27a2e"
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Shot terakhir">
-          {last ? (
-            <>
-              <span className="rounded-full px-2.5 py-0.5 text-sm font-semibold text-white" style={{ background: directionColor(last.direction) }}>
-                {last.direction === 'tetap' ? 'Tetap' : `${last.direction === 'halus' ? 'Perhalus' : 'Perkasar'} ${fmtNum(last.amount, 2)} ${grinder.unitLabel}`}
-              </span>
-              <div className="mt-1 text-sm text-muted">
-                {last.bean} · {fmtMath(last.time, 1)} s{isDialedIn(last) ? ' · Terkalibrasi' : ''}
-              </div>
-            </>
-          ) : (
-            <span className="text-muted">Belum ada</span>
-          )}
-        </Stat>
-        <Stat label="Setting grinder terakhir">
-          <span className="tabular font-display text-2xl font-semibold">
-            {last?.newSetting ?? last?.grindSetting ?? '–'} {last?.grindSetting !== null && last ? grinder.unitLabel : ''}
-          </span>
-          <div className="text-sm text-muted">{grinder.name}</div>
-        </Stat>
-        <Stat label="Shot terkalibrasi">
-          <span className="tabular font-display text-2xl font-semibold">
-            {allShots.length ? `${fmtMath((dialed / allShots.length) * 100, 1)}%` : '–'}
-          </span>
-          <div className="text-sm text-muted">
-            {dialed} dari {allShots.length} shot
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Card className="flex flex-col">
+          <div className="text-sm font-medium text-muted">Modul 1</div>
+          <h2 className="mt-0.5 text-xl font-semibold">Kalibrasi espresso</h2>
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
+            <Readout label="Sesi berjalan">{active ? active.beanName : 'Tidak ada'}</Readout>
+            <Readout label="Setting grinder sekarang">
+              {setting === null ? '–' : (
+                <>
+                  <span className="tabular">{fmtNum(setting, 2)}</span> <span className="text-base font-medium text-muted">{unit}</span>
+                </>
+              )}
+            </Readout>
+            <Readout label="Shot terakhir">
+              {last ? <span style={{ color: directionColor(last.direction) }}>{dirText(last)}</span> : '–'}
+            </Readout>
           </div>
-        </Stat>
-        <Stat label="Agreement rate">
-          <span className="tabular font-display text-2xl font-semibold">{agr.rate === null ? '–' : `${fmtMath(agr.rate, 1)}%`}</span>
-          <div className="text-sm text-muted">{agr.judged ? `${agr.agreed} / ${agr.judged} shot sesuai pakar` : 'Belum dinilai pakar'}</div>
-        </Stat>
+          <div className="mt-auto pt-5">
+            <LinkButton to="/kalibrasi" size="lg" className="w-full sm:w-auto">
+              {active ? `Lanjutkan sesi (${active.shots.length} shot)` : 'Mulai kalibrasi'} <ArrowRight className="size-5" />
+            </LinkButton>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col">
+          <div className="text-sm font-medium text-muted">Modul 2</div>
+          <h2 className="mt-0.5 text-xl font-semibold">Resep menu</h2>
+          <ul className="mt-4 divide-y divide-line border-t border-line">
+            {RECIPE_CATEGORIES.map((c) => (
+              <li key={c}>
+                <Link to={`/resep?kategori=${encodeURIComponent(c)}`} className="flex h-12 items-center justify-between gap-3 text-[15px] hover:text-ink">
+                  <span className="font-medium">{c}</span>
+                  <span className="flex items-center gap-1 text-muted">
+                    {recipes.filter((r) => r.category === c).length} resep <ChevronRight className="size-4" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-auto pt-4">
+            <LinkButton to="/resep" size="lg" variant="outline" className="w-full sm:w-auto">
+              Buka buku resep <ArrowRight className="size-5" />
+            </LinkButton>
+          </div>
+        </Card>
       </div>
 
-      <Card className="mt-4">
-        <SectionTitle>Menu lainnya</SectionTitle>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <QuickLink to="/riwayat" icon={<History className="size-5" />} label="Riwayat Kalibrasi" />
-          <QuickLink to="/pakar" icon={<BrainCircuit className="size-5" />} label="Basis Pengetahuan" />
-          <QuickLink to="/sus" icon={<ClipboardList className="size-5" />} label="Kuesioner SUS" badge={sus.length ? `${sus.length} responden` : undefined} />
-          <QuickLink to="/pengaturan" icon={<Settings className="size-5" />} label="Pengaturan" />
-        </div>
-      </Card>
+      {shots.length > 0 && (
+        <Card className="mt-5">
+          <SectionTitle
+            action={
+              <Link to="/riwayat" className="text-sm font-semibold text-muted hover:text-ink">
+                Semua riwayat
+              </Link>
+            }
+          >
+            Shot terakhir
+          </SectionTitle>
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
+            <table className="tabular w-full min-w-[560px] text-[15px]">
+              <thead className="text-left text-sm text-muted">
+                <tr className="border-b border-line">
+                  <th className="py-2 pr-3 font-medium">Waktu catat</th>
+                  <th className="py-2 pr-3 font-medium">Biji</th>
+                  <th className="py-2 pr-3 font-medium">Shot</th>
+                  <th className="py-2 pr-3 font-medium">Rasa</th>
+                  <th className="py-2 font-medium">Saran</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shots.slice(0, 5).map((s) => (
+                  <tr key={s.id} className="border-b border-line last:border-0">
+                    <td className="py-2.5 pr-3 text-muted">{fmtDateTime(s.createdAt)}</td>
+                    <td className="py-2.5 pr-3">{s.bean}</td>
+                    <td className="py-2.5 pr-3">
+                      {fmtNum(s.dose)}→{fmtNum(s.yield)} g · {fmtNum(s.time)} s
+                    </td>
+                    <td className="py-2.5 pr-3">{tasteLabel(s.taste)}</td>
+                    <td className="py-2.5 font-semibold" style={{ color: directionColor(s.direction) }}>
+                      {dirText(s)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {isHead && (
+        <Card className="mt-5">
+          <SectionTitle
+            action={
+              <Link to="/head-barista" className="text-sm font-semibold text-muted hover:text-ink">
+                Buka menu Head Barista
+              </Link>
+            }
+          >
+            Tugas Head Barista
+          </SectionTitle>
+          <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            <TaskRow to="/riwayat" label="Nilai shot barista" value={unjudged ? `${unjudged} belum dinilai` : agr.judged ? `Kesesuaian ${fmtNum(agr.rate, 1)}%` : 'Belum ada shot'} />
+            <TaskRow to="/pakar" label="Basis pengetahuan" value={`${kb.rules.length} aturan`} />
+            <TaskRow to="/sus" label="Kuesioner SUS" value={`${sus.length} responden`} />
+            <TaskRow to="/head-barista" label="Grinder & akun barista" value={grinder.name} />
+          </ul>
+        </Card>
+      )}
     </>
   );
 }
 
-function ModuleCard({ to, icon, tag, title, desc, meta, accent }: { to: string; icon: React.ReactNode; tag: string; title: string; desc: string; meta: string; accent: string }) {
+function Readout({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Link
-      to={to}
-      className="group relative flex flex-col overflow-hidden rounded-3xl p-6 text-white transition hover:brightness-110 md:p-7"
-      style={{ background: `linear-gradient(135deg, ${accent}, #2a1d15)` }}
-    >
-      <div className="flex items-center gap-3">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-white/15">{icon}</span>
-        <span className="rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">{tag}</span>
-      </div>
-      <h2 className="mt-4 font-display text-3xl font-semibold">{title}</h2>
-      <p className="mt-2 text-white/85">{desc}</p>
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <span className="text-sm text-white/75">{meta}</span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#2a1d15]">
-          Buka <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-3xl border border-line bg-surface p-4">
-      <div className="mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">{label}</div>
-      {children}
+    <div className="min-w-0">
+      <div className="text-sm text-muted">{label}</div>
+      <div className="mt-1 truncate text-lg font-semibold">{children}</div>
     </div>
   );
 }
 
-function QuickLink({ to, icon, label, badge }: { to: string; icon: React.ReactNode; label: string; badge?: string }) {
+function TaskRow({ to, label, value }: { to: string; label: string; value: string }) {
   return (
-    <Link to={to} className="flex h-14 items-center gap-3 rounded-2xl border border-line px-4 font-semibold transition hover:border-brand/50 hover:bg-surface-2">
-      <span className="text-muted">{icon}</span>
-      <span className="flex-1">{label}</span>
-      {badge && <Badge>{badge}</Badge>}
-    </Link>
+    <li className="border-b border-line last:border-0 sm:[&:nth-last-child(2)]:border-0">
+      <Link to={to} className="flex h-12 items-center justify-between gap-3 text-[15px]">
+        <span className="font-medium">{label}</span>
+        <span className="flex items-center gap-1 text-muted">
+          {value} <ChevronRight className="size-4" />
+        </span>
+      </Link>
+    </li>
   );
 }

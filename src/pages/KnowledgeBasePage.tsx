@@ -1,4 +1,5 @@
-import { Grid3x3, List, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { ArrowLeft, Grid3x3, List, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { MembershipChart } from '../components/charts/MembershipChart';
 import { termColor } from '../components/charts/colors';
@@ -38,8 +39,13 @@ export function KnowledgeBasePage() {
 
   return (
     <>
+      {isHead && (
+        <Link to="/head-barista" className="mb-2 inline-flex h-11 items-center gap-2 rounded-lg pr-3 font-semibold text-muted hover:text-ink">
+          <ArrowLeft className="size-5" /> Head Barista
+        </Link>
+      )}
       <PageHeader
-        title="Basis Pengetahuan Pakar"
+        title="Basis pengetahuan"
         subtitle={`Himpunan fuzzy & ${kb.rules.length} aturan IF–THEN · diperbarui ${fmtDateTime(kb.updatedAt)} oleh ${kb.updatedBy}`}
         actions={
           isHead && (
@@ -61,7 +67,7 @@ export function KnowledgeBasePage() {
       />
 
       {dirty && (
-        <div className="sticky top-2 z-30 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand bg-surface px-4 py-3 shadow-lg">
+        <div className="sticky top-2 z-30 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink bg-surface px-4 py-3 shadow-md">
           <span className="font-semibold">{hasErrors ? 'Perbaiki kesalahan sebelum menyimpan.' : 'Ada perubahan yang belum disimpan.'}</span>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setDraft(structuredClone(kb))}>
@@ -122,7 +128,7 @@ function VariableCard({
   return (
     <Card>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-display text-2xl font-semibold">{variable.label}</h2>
+        <h2 className="text-lg font-semibold">{variable.label}</h2>
         <Badge>
           {variable.key === 'grind' ? 'Output' : 'Input'} · semesta {fmtNum(variable.min)} – {fmtNum(variable.max)} {variable.unit}
         </Badge>
@@ -130,7 +136,7 @@ function VariableCard({
       <MembershipChart variable={variable} />
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
-          <thead className="text-left text-xs tracking-wide text-muted uppercase">
+          <thead className="text-left text-sm font-medium text-muted">
             <tr>
               <th className="py-1.5 pr-2">Himpunan</th>
               {['a', 'b', 'c', 'd'].map((p) => (
@@ -228,7 +234,7 @@ function RulesView({ kb, editable, onChange }: { kb: KnowledgeBase; editable: bo
         />
         <div className="flex w-full flex-wrap gap-2">
           {counts.map(({ t, n }, i) => (
-            <span key={t.key} className="rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ background: termColor('grind', i) }}>
+            <span key={t.key} className="rounded-md px-2 py-0.5 text-xs font-semibold text-bg" style={{ background: termColor('grind', i) }}>
               {t.short} = {t.label} · {n}
             </span>
           ))}
@@ -262,7 +268,7 @@ function RulesView({ kb, editable, onChange }: { kb: KnowledgeBase; editable: bo
                           disabled={!editable}
                           onClick={() => setEditing(rule)}
                           title={`${rule.id}: ${outputLabel(rule.then)}`}
-                          className="relative flex h-16 flex-col items-center justify-center rounded-xl font-bold text-white transition enabled:hover:brightness-110 enabled:active:scale-95"
+                          className="relative flex h-16 flex-col items-center justify-center rounded-xl font-bold text-bg transition enabled:hover:brightness-110 enabled:active:scale-95"
                           style={{ background: termColor('grind', outIdx(rule.then)) }}
                         >
                           <span className="absolute top-1 left-1.5 text-[10px] font-semibold opacity-80">{rule.id}</span>
@@ -298,7 +304,7 @@ function RulesView({ kb, editable, onChange }: { kb: KnowledgeBase; editable: bo
                     type="button"
                     disabled={!editable}
                     onClick={() => setEditing(r)}
-                    className="shrink-0 rounded-full px-3 py-1 text-sm font-semibold text-white enabled:hover:brightness-110"
+                    className="shrink-0 rounded-md px-2.5 py-1 text-sm font-semibold text-bg enabled:hover:opacity-90"
                     style={{ background: termColor('grind', outIdx(r.then)) }}
                   >
                     {kb.output.terms[outIdx(r.then)]?.short}
@@ -333,8 +339,8 @@ function RulesView({ kb, editable, onChange }: { kb: KnowledgeBase; editable: bo
                     setEditing(null);
                   }}
                   className={cx(
-                    'flex h-14 items-center justify-between rounded-2xl border-2 px-4 font-semibold transition',
-                    editing.then === t.key ? 'text-white' : 'border-line hover:border-brand',
+                    'flex h-14 items-center justify-between rounded-lg border px-4 font-semibold transition',
+                    editing.then === t.key ? 'text-bg' : 'border-line hover:border-brand',
                   )}
                   style={editing.then === t.key ? { background: termColor('grind', i), borderColor: termColor('grind', i) } : undefined}
                 >
@@ -404,7 +410,7 @@ function MethodView({ kb }: { kb: KnowledgeBase }) {
                   <td className="py-2 text-left font-semibold">{tasteLabels[r] ?? taste}</td>
                   {row.map((v, i) => (
                     <td key={i} className="p-1">
-                      <span className="block rounded-lg py-1.5 font-bold text-white" style={{ background: termColor('grind', v + 2) }}>
+                      <span className="block rounded-lg py-1.5 font-bold text-bg" style={{ background: termColor('grind', v + 2) }}>
                         {outShort(v)}
                       </span>
                     </td>

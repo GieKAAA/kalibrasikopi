@@ -1,13 +1,15 @@
-import { ArrowLeft, CheckCircle2, CircleDashed, Download, History, Minus, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calculator, CheckCircle2, CircleDashed, Download, History, Minus, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { directionColor } from '../components/charts/colors';
-import { Badge, Button, Card, ConfirmDialog, cx, EmptyState, PageHeader, SectionTitle, TextInput } from '../components/ui';
-import { CALIBRATED_CRITERIA, normalTarget, tasteLabel, type Direction } from '../fuzzy/advice';
+import { FuzzyTrace } from '../components/FuzzyTrace';
+import { Badge, Button, Card, ConfirmDialog, cx, EmptyState, Modal, PageHeader, SectionTitle, TextInput } from '../components/ui';
+import { CALIBRATED_CRITERIA, normalTarget, recommend, tasteLabel, type Direction } from '../fuzzy/advice';
+import { infer } from '../fuzzy/engine';
 import { saveTextFile, stamp, toCsv } from '../lib/files';
 import { fmtDateTime, fmtMath, fmtNum, fmtTime } from '../lib/format';
 import { agreement, expertAgrees, isDialedIn, sessionDialedIn } from '../lib/stats';
-import type { CalibrationSession } from '../store/types';
+import type { CalibrationSession, Shot } from '../store/types';
 import { useApp, useIsHead } from '../store/useApp';
 
 const DIR_LABEL: Record<Direction, string> = { halus: 'Perhalus', tetap: 'Tetap', kasar: 'Perkasar' };
@@ -37,13 +39,13 @@ function ExpertInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="inline-flex rounded-xl bg-surface-2 p-0.5">
+      <div className="inline-flex rounded-lg border border-line p-0.5">
         {(['halus', 'tetap', 'kasar'] as Direction[]).map((d) => (
           <button
             key={d}
             type="button"
             onClick={() => (direction === d ? onChange(null, null) : onChange(d, suggest(d)))}
-            className={cx('h-9 rounded-lg px-2.5 text-sm font-semibold transition', direction === d ? 'text-white' : 'text-muted hover:text-ink')}
+            className={cx('h-9 rounded-md px-2.5 text-sm font-semibold transition', direction === d ? 'text-bg' : 'text-muted hover:text-ink')}
             style={direction === d ? { background: directionColor(d) } : undefined}
           >
             {DIR_LABEL[d]}
@@ -138,7 +140,7 @@ function SessionList({ sessions }: { sessions: CalibrationSession[] }) {
     <>
       <PageHeader
         title="Riwayat Kalibrasi"
-        subtitle="Jejak setiap sesi dial-in beserta rekomendasi sistem"
+        subtitle="Setiap sesi dial-in beserta saran sistem"
         actions={
           withShots.length > 0 && (
             <Button variant="secondary" onClick={() => saveTextFile(`riwayat-kalibrasi-${stamp()}.csv`, sessionsToCsv(withShots), 'text/csv')}>
@@ -147,20 +149,20 @@ function SessionList({ sessions }: { sessions: CalibrationSession[] }) {
           )
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Card className="mb-5 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
         <Stat label="Sesi" value={String(withShots.length)} />
-        <Stat label="Total shot" value={String(totalShots)} sub={withShots.length ? `${fmtNum(totalShots / withShots.length, 1)} shot / sesi` : undefined} />
+        <Stat label="Total shot" value={String(totalShots)} sub={withShots.length ? `${fmtNum(totalShots / withShots.length, 1)} shot per sesi` : undefined} />
         <Stat
           label="Shot terkalibrasi"
-          value={totalShots ? `${fmtMath((dialedShots / totalShots) * 100, 1)}%` : '–'}
-          sub={`${dialedShots} dari ${totalShots} shot · ${dialed} dari ${withShots.length} sesi`}
+          value={totalShots ? `${fmtNum((dialedShots / totalShots) * 100, 1)}%` : '–'}
+          sub={`${dialedShots} dari ${totalShots} shot · ${dialed} sesi tuntas`}
         />
         <Stat
-          label="Agreement rate (pakar)"
-          value={agr.rate === null ? '–' : `${fmtMath(agr.rate, 1)}%`}
-          sub={agr.judged ? `${agr.agreed} / ${agr.judged} × 100% = ${fmtMath(agr.rate!, 1)}%` : 'Belum ada penilaian pakar'}
+          label="Kesesuaian dengan Head Barista"
+          value={agr.rate === null ? '–' : `${fmtNum(agr.rate, 1)}%`}
+          sub={agr.judged ? `${agr.agreed} dari ${agr.judged} shot yang dinilai` : 'Belum ada penilaian'}
         />
-      </div>
+      </Card>
 
       {withShots.length === 0 ? (
         <EmptyState icon={<History className="size-7" />} title="Belum ada riwayat">
@@ -178,7 +180,7 @@ function SessionList({ sessions }: { sessions: CalibrationSession[] }) {
               const last = s.shots.at(-1)!;
               return (
                 <li key={s.id}>
-                  <Link to={`/riwayat/${s.id}`} className="block rounded-3xl border border-line bg-surface p-4 transition hover:border-brand/50">
+                  <Link to={`/riwayat/${s.id}`} className="block rounded-xl border border-line bg-surface p-4 transition hover:border-ink/40">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-lg font-semibold">{s.beanName}</div>
@@ -187,9 +189,9 @@ function SessionList({ sessions }: { sessions: CalibrationSession[] }) {
                         </div>
                       </div>
                       {s.finishedAt === null ? (
-                        <Badge className="bg-crema/15 text-crema">Aktif</Badge>
+                        <Badge className="bg-crema/10 text-crema">Aktif</Badge>
                       ) : ok ? (
-                        <Badge className="bg-hold/15 text-hold">
+                        <Badge className="bg-hold/10 text-hold">
                           <CheckCircle2 className="size-3.5" /> Terkalibrasi
                         </Badge>
                       ) : (
@@ -223,10 +225,10 @@ function SessionList({ sessions }: { sessions: CalibrationSession[] }) {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-3xl border border-line bg-surface p-4">
-      <div className="text-xs font-semibold tracking-wide text-muted uppercase">{label}</div>
-      <div className="tabular mt-1 font-display text-3xl font-semibold">{value}</div>
-      {sub && <div className="mt-0.5 text-sm text-muted">{sub}</div>}
+    <div className="min-w-0">
+      <div className="text-sm text-muted">{label}</div>
+      <div className="readout mt-1.5 text-[28px]">{value}</div>
+      {sub && <div className="mt-1.5 text-sm text-muted">{sub}</div>}
     </div>
   );
 }
@@ -256,12 +258,14 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
   const deleteSession = useApp((s) => s.deleteSession);
   const setExpertDecision = useApp((s) => s.setExpertDecision);
   const [confirm, setConfirm] = useState(false);
+  const [trace, setTrace] = useState<{ shot: Shot; no: number } | null>(null);
   const agr = agreement([session]);
+  const dialedN = session.shots.filter(isDialedIn).length;
   const t = normalTarget(kb, 'time');
 
   return (
     <>
-      <Link to="/riwayat" className="mb-2 inline-flex h-11 items-center gap-2 rounded-xl pr-3 font-semibold text-muted hover:text-ink">
+      <Link to="/riwayat" className="mb-2 inline-flex h-11 items-center gap-2 rounded-lg pr-3 font-semibold text-muted hover:text-ink">
         <ArrowLeft className="size-5" /> Semua riwayat
       </Link>
       <PageHeader
@@ -281,54 +285,39 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
         }
       />
 
-      <Card className="mb-4">
-        <SectionTitle>Perjalanan waktu ekstraksi</SectionTitle>
-        <TimeChart session={session} band={[t.low, t.high]} />
-      </Card>
-
-      <Card className="mb-4">
-        <SectionTitle>Ringkasan pengujian sesi</SectionTitle>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="tabular rounded-2xl bg-surface-2 px-4 py-3">
-            <div className="text-xs font-semibold tracking-wide text-muted uppercase">Agreement rate</div>
-            {agr.judged ? (
-              <div className="mt-1 text-[15px]">
-                {agr.agreed} / {agr.judged} × 100% = <b className="text-lg">{fmtMath(agr.rate!, 1)}%</b>
-              </div>
-            ) : (
-              <div className="mt-1 text-[15px] text-muted">Belum ada shot yang dinilai Head Barista.</div>
-            )}
-            <div className="mt-1 text-xs text-muted">Sesuai = arah sama dan besar putaran sama dengan keputusan Head Barista.</div>
-          </div>
-          <div className="tabular rounded-2xl bg-surface-2 px-4 py-3">
-            <div className="text-xs font-semibold tracking-wide text-muted uppercase">Shot terkalibrasi</div>
-            <div className="mt-1 text-[15px]">
-              {session.shots.filter(isDialedIn).length} / {session.shots.length} × 100% ={' '}
-              <b className="text-lg">{fmtMath((session.shots.filter(isDialedIn).length / session.shots.length) * 100, 1)}%</b>
-            </div>
-            <div className="mt-1 text-xs text-muted">{CALIBRATED_CRITERIA}</div>
-          </div>
+      <Card className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <SectionTitle>Waktu ekstraksi per shot</SectionTitle>
+          <TimeChart session={session} band={[t.low, t.high]} />
+        </div>
+        <div className="grid grid-cols-2 content-start gap-5 border-t border-line pt-5 lg:grid-cols-1 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+          <Stat
+            label="Kesesuaian dengan Head Barista"
+            value={agr.rate === null ? '–' : `${fmtNum(agr.rate, 1)}%`}
+            sub={agr.judged ? `${agr.agreed} dari ${agr.judged} shot cocok (arah dan jumlah klik sama)` : 'Belum ada shot yang dinilai'}
+          />
+          <Stat label="Shot terkalibrasi" value={`${dialedN} dari ${session.shots.length}`} sub="Saran tetap, rasa seimbang, waktu masuk target" />
         </div>
       </Card>
 
       <Card>
         <SectionTitle>Detail shot</SectionTitle>
         {isHead && (
-          <p className="mb-3 text-sm text-muted">
-            Head Barista: isi kolom <b className="text-ink">Keputusan pakar</b> (arah dan besar putaran menurut Anda, tanpa melihat rekomendasi sistem) untuk menghitung agreement rate.
+          <p className="-mt-1 mb-3 text-sm text-muted">
+            Isi kolom <b className="text-ink">Keputusan Head Barista</b> dengan arah dan jumlah klik menurut Anda sendiri. {CALIBRATED_CRITERIA}
           </p>
         )}
         <div className="-mx-5 overflow-x-auto px-5">
           <table className="w-full min-w-[980px] text-[15px]">
-            <thead className="text-left text-xs tracking-wide text-muted uppercase">
+            <thead className="text-left text-sm text-muted">
               <tr className="border-b border-line">
-                <th className="py-2 pr-3">#</th>
-                <th className="py-2 pr-3">Parameter ekstraksi</th>
-                <th className="py-2 pr-3">Waktu</th>
-                <th className="py-2 pr-3">Output sistem fuzzy</th>
-                <th className="py-2 pr-3">Keputusan Head Barista</th>
-                <th className="py-2 pr-3">Kesesuaian</th>
-                <th className="py-2">Status shot</th>
+                <th className="py-2 pr-3 font-medium">#</th>
+                <th className="py-2 pr-3 font-medium">Parameter ekstraksi</th>
+                <th className="py-2 pr-3 font-medium">Waktu</th>
+                <th className="py-2 pr-3 font-medium">Saran sistem</th>
+                <th className="py-2 pr-3 font-medium">Keputusan Head Barista</th>
+                <th className="py-2 pr-3 font-medium">Kesesuaian</th>
+                <th className="py-2 font-medium">Status shot</th>
               </tr>
             </thead>
             <tbody>
@@ -336,7 +325,7 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
                 const agree = expertAgrees(s);
                 return (
                   <tr key={s.id} className="border-b border-line align-top last:border-0">
-                    <td className="py-3 pr-3 font-bold">{i + 1}</td>
+                    <td className="py-3 pr-3 font-semibold">{i + 1}</td>
                     <td className="tabular py-3 pr-3">
                       {fmtNum(s.dose)} g → {fmtNum(s.yield)} g
                       <div className="text-sm text-muted">Rasa: {tasteLabel(s.taste)} ({fmtMath(s.taste, 1)})</div>
@@ -350,12 +339,18 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
                       {fmtMath(s.time, 1)} s{s.timeCategory && <div className="text-sm text-muted">{s.timeCategory}</div>}
                     </td>
                     <td className="py-3 pr-3">
-                      <span className="inline-block rounded-full px-2.5 py-0.5 text-sm font-semibold text-white" style={{ background: directionColor(s.direction) }}>
+                      <span className="font-semibold" style={{ color: directionColor(s.direction) }}>
                         {dirText(s.direction, s.amount, grinder.unitLabel)}
                       </span>
-                      <div className="tabular mt-0.5 text-xs text-muted">
-                        z* = {fmtMath(s.crisp ?? NaN, 3)} · {s.topRules.map((r) => `${r.id} (α ${fmtMath(r.alpha, 3)})`).join(', ')}
-                      </div>
+                      {isHead && (
+                        <button
+                          type="button"
+                          onClick={() => setTrace({ shot: s, no: i + 1 })}
+                          className="mt-1 flex items-center gap-1 text-sm font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
+                        >
+                          <Calculator className="size-3.5" /> Lihat perhitungan
+                        </button>
+                      )}
                     </td>
                     <td className="py-3 pr-3">
                       {isHead ? (
@@ -377,12 +372,12 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
                       {agree === null ? (
                         <span className="text-muted">–</span>
                       ) : (
-                        <Badge className={agree ? 'bg-hold/15 text-hold' : 'bg-danger/10 text-danger'}>{agree ? 'Cocok' : 'Tidak cocok'}</Badge>
+                        <Badge className={agree ? 'bg-hold/10 text-hold' : 'bg-danger/10 text-danger'}>{agree ? 'Cocok' : 'Tidak cocok'}</Badge>
                       )}
                     </td>
                     <td className="py-3">
                       {isDialedIn(s) ? (
-                        <Badge className="bg-hold/15 text-hold">
+                        <Badge className="bg-hold/10 text-hold">
                           <CheckCircle2 className="size-3.5" /> Terkalibrasi
                         </Badge>
                       ) : (
@@ -399,6 +394,7 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
         </div>
       </Card>
 
+      <TraceModal open={trace} onClose={() => setTrace(null)} />
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}
@@ -410,6 +406,24 @@ function SessionDetail({ session }: { session: CalibrationSession }) {
         }}
       />
     </>
+  );
+}
+
+/** Jejak perhitungan Mamdani untuk satu shot — hanya untuk Head Barista / keperluan penelitian. */
+function TraceModal({ open, onClose }: { open: { shot: Shot; no: number } | null; onClose: () => void }) {
+  const kb = useApp((s) => s.kb);
+  const grinder = useApp((s) => s.grinder);
+  if (!open) return null;
+  const { shot } = open;
+  const result = infer(kb, { dose: shot.dose, yield: shot.yield, time: shot.time, taste: shot.taste });
+  const rec = recommend(result, grinder, shot.grindSetting);
+  return (
+    <Modal open onClose={onClose} title={`Perhitungan Fuzzy Mamdani · shot #${open.no}`} wide>
+      <p className="mb-4 text-sm text-muted">
+        Dihitung ulang dengan basis pengetahuan yang berlaku sekarang ({fmtDateTime(kb.updatedAt)}). Halaman ini untuk verifikasi oleh Head Barista dan penulisan laporan.
+      </p>
+      <FuzzyTrace kb={kb} result={result} rec={rec} grinder={grinder} />
+    </Modal>
   );
 }
 
@@ -426,7 +440,7 @@ function TimeChart({ session, band }: { session: CalibrationSession; band: [numb
   const ticks = [10, 20, 30, 40, 50].filter((v) => v >= lo && v <= hi);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label="Grafik waktu ekstraksi per shot">
-      <rect x={pad.l} width={W - pad.l - pad.r} y={y(band[1])} height={y(band[0]) - y(band[1])} fill="var(--hold)" opacity={0.12} />
+      <rect x={pad.l} width={W - pad.l - pad.r} y={y(band[1])} height={y(band[0]) - y(band[1])} fill="var(--hold)" opacity={0.1} />
       <text x={pad.l + 6} y={y(band[1]) - 6} fontSize="12" fill="var(--hold)" fontWeight={600}>
         target {band[0]}–{band[1]} s
       </text>
@@ -438,10 +452,10 @@ function TimeChart({ session, band }: { session: CalibrationSession; band: [numb
           </text>
         </g>
       ))}
-      {n > 1 && <polyline points={session.shots.map((s, i) => `${x(i)},${y(s.time)}`).join(' ')} fill="none" stroke="var(--brand)" strokeWidth={2.5} />}
+      {n > 1 && <polyline points={session.shots.map((s, i) => `${x(i)},${y(s.time)}`).join(' ')} fill="none" stroke="var(--muted)" strokeWidth={1.5} />}
       {session.shots.map((s, i) => (
         <g key={s.id}>
-          <circle cx={x(i)} cy={y(s.time)} r={8} fill={directionColor(s.direction)} stroke="var(--surface)" strokeWidth={2} />
+          <circle cx={x(i)} cy={y(s.time)} r={6} fill={directionColor(s.direction)} stroke="var(--surface)" strokeWidth={2} />
           <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="12" fill="var(--muted)">
             #{i + 1}
           </text>

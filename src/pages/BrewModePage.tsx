@@ -34,7 +34,7 @@ export function BrewModePage() {
           <X className="size-6" /> Tutup
         </Button>
         <div className="min-w-0 flex-1 text-center">
-          <div className="truncate font-display text-xl font-semibold">{recipe.name}</div>
+          <div className="truncate text-lg font-semibold">{recipe.name}</div>
           <div className="text-sm text-muted">
             Langkah {index + 1} dari {recipe.steps.length}
           </div>
@@ -44,20 +44,20 @@ export function BrewModePage() {
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="hidden w-[340px] shrink-0 overflow-y-auto border-r border-line p-6 lg:block">
-          <h2 className="mb-3 text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">Siapkan bahan</h2>
+          <h2 className="mb-3 text-base font-semibold">Siapkan bahan</h2>
           <ul className="space-y-2">
             {recipe.ingredients.map((i) => (
               <li key={i.id}>
                 <button
                   type="button"
                   onClick={() => setChecked((c) => ({ ...c, [i.id]: !c[i.id] }))}
-                  className={cx('flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition', checked[i.id] ? 'border-hold bg-hold/10' : 'border-line bg-surface')}
+                  className={cx('flex w-full items-center gap-3 rounded-lg border p-3 text-left transition', checked[i.id] ? 'border-line bg-surface-2' : 'border-line bg-surface')}
                 >
-                  <span className={cx('flex size-7 shrink-0 items-center justify-center rounded-lg border-2', checked[i.id] ? 'border-hold bg-hold text-white' : 'border-line')}>
+                  <span className={cx('flex size-6 shrink-0 items-center justify-center rounded-md border-2', checked[i.id] ? 'border-ink bg-ink text-bg' : 'border-line')}>
                     {checked[i.id] && <Check className="size-4" strokeWidth={3} />}
                   </span>
                   <span className={cx('min-w-0 flex-1 font-semibold', checked[i.id] && 'text-muted line-through')}>{i.name}</span>
-                  <span className="tabular shrink-0 font-bold">
+                  <span className="tabular shrink-0 font-semibold">
                     {i.amount !== null ? fmtNum(i.amount, 2) : ''} {i.unit}
                   </span>
                 </button>
@@ -67,8 +67,7 @@ export function BrewModePage() {
         </aside>
 
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8 text-center md:px-16">
-          <div className="mb-6 flex h-16 min-w-16 items-center justify-center rounded-full bg-brand px-5 font-display text-3xl font-semibold text-brand-ink">{index + 1}</div>
-          <p className="max-w-3xl font-display text-3xl leading-snug font-medium md:text-4xl lg:text-[44px]">{step?.text}</p>
+          <p className="max-w-3xl text-3xl leading-snug font-semibold tracking-tight md:text-4xl lg:text-[44px]">{step?.text}</p>
           {step?.durationSec ? <StepTimer key={step.id} seconds={step.durationSec} /> : null}
         </main>
       </div>
@@ -81,7 +80,7 @@ export function BrewModePage() {
               type="button"
               aria-label={`Ke langkah ${i + 1}`}
               onClick={() => setIndex(i)}
-              className={cx('h-2.5 rounded-full transition-all', i === index ? 'w-8 bg-brand' : i < index ? 'w-2.5 bg-brand/50' : 'w-2.5 bg-line')}
+              className={cx('h-1.5 rounded-full transition-all', i === index ? 'w-8 bg-ink' : i < index ? 'w-4 bg-ink/40' : 'w-4 bg-line')}
             />
           ))}
         </div>
@@ -128,7 +127,7 @@ function StepTimer({ seconds }: { seconds: number }) {
 
   return (
     <div className="mt-10 flex items-center gap-4">
-      <div className={cx('tabular text-6xl font-bold md:text-7xl', done && 'text-hold')}>
+      <div className={cx('readout text-6xl md:text-7xl', done && 'text-hold')}>
         {mm}:{String(ss).padStart(2, '0')}
       </div>
       <Button

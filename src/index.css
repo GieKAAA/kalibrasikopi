@@ -4,7 +4,7 @@
 
 @theme inline {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-display: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -28,46 +28,46 @@
 
 :root {
   color-scheme: light;
-  --bg: #f4eee5;
-  --surface: #fffcf7;
-  --surface-2: #efe6da;
-  --line: #e1d4c3;
-  --ink: #2a1d15;
-  --muted: #76655a;
-  --brand: #6b4226;
-  --brand-ink: #fffaf3;
-  --brand-soft: #eadbc8;
-  --crema: #c27a2e;
-  --fine: #2563a8;
-  --coarse: #c0561b;
-  --hold: #2f7d4f;
-  --sour: #b98f0a;
-  --balanced: #2f7d4f;
-  --bitter: #7a3b2e;
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface-2: #eceae4;
+  --line: #dcd8cf;
+  --ink: #1c1a17;
+  --muted: #6b665e;
+  --brand: #1c1a17;
+  --brand-ink: #ffffff;
+  --brand-soft: #e7e4dc;
+  --crema: #a8552a;
+  --fine: #2d5b8a;
+  --coarse: #b0502a;
+  --hold: #2d6a4b;
+  --sour: #9a7a10;
+  --balanced: #2d6a4b;
+  --bitter: #6b3a2c;
   --danger: #b42318;
-  --warn: #b25e09;
+  --warn: #a35a0c;
 }
 
 :root.dark {
   color-scheme: dark;
-  --bg: #14100d;
-  --surface: #1e1713;
-  --surface-2: #29201a;
-  --line: #3a2e26;
-  --ink: #f4ece3;
-  --muted: #ae9f91;
-  --brand: #dca46b;
-  --brand-ink: #1a120d;
-  --brand-soft: #3a2b20;
-  --crema: #e3a45c;
-  --fine: #6ea8ea;
-  --coarse: #f28c4e;
-  --hold: #5cc38a;
-  --sour: #e2c04a;
-  --balanced: #5cc38a;
-  --bitter: #db8a73;
+  --bg: #121110;
+  --surface: #1a1917;
+  --surface-2: #24221f;
+  --line: #34312c;
+  --ink: #f0ede7;
+  --muted: #a39e95;
+  --brand: #f0ede7;
+  --brand-ink: #121110;
+  --brand-soft: #2b2925;
+  --crema: #e08a57;
+  --fine: #7fa9d8;
+  --coarse: #e3895c;
+  --hold: #6fbf91;
+  --sour: #d9b84a;
+  --balanced: #6fbf91;
+  --bitter: #d38c76;
   --danger: #f97066;
-  --warn: #f5a524;
+  --warn: #f0a33a;
 }
 
 html,
@@ -87,6 +87,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss03';
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
@@ -94,6 +95,14 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Angka besar ala layar timbangan: rapat dan sejajar. */
+.readout {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 button,
@@ -117,31 +126,30 @@ input[type='range'].taste-range {
   background: transparent;
 }
 input[type='range'].taste-range::-webkit-slider-runnable-track {
-  height: 10px;
+  height: 6px;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--sour), var(--balanced) 50%, var(--bitter));
 }
 input[type='range'].taste-range::-moz-range-track {
-  height: 10px;
+  height: 6px;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--sour), var(--balanced) 50%, var(--bitter));
 }
 input[type='range'].taste-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   margin-top: -11px;
   border-radius: 999px;
   background: var(--surface);
-  border: 3px solid var(--ink);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  border: 2px solid var(--ink);
 }
 input[type='range'].taste-range::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   background: var(--surface);
-  border: 3px solid var(--ink);
+  border: 2px solid var(--ink);
 }
 
 /* Hanya untuk elemen tanpa padding vertikal sendiri (kelas ini tidak ber-layer). */

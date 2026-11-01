@@ -16,16 +16,26 @@ profil rasa), 1 variabel output (grind size), rule base IF–THEN, defuzzifikasi
 
 | Menu | Isi |
 |---|---|
-| **Beranda** | Dashboard setelah masuk: pilih Modul 1 (Kalibrasi) atau Modul 2 (Resep), ringkasan shot terakhir, shot terkalibrasi, dan agreement rate. |
-| **Kalibrasi** | Timer shot (tap Mulai/Stop), stepper besar untuk dose/yield/waktu, pemilih rasa (Sangat Asam … Sangat Pahit), setting grinder. Hasil: kartu "Perhalus/Perkasar Putaran Grinder" dengan jumlah klik & setting baru, status shot (Terkalibrasi/Belum) beserta kriterianya, *Catatan Head Barista*, dan **jejak perhitungan Mamdani** yang bisa diverifikasi manual: parameter (a; b; c; d) + substitusi μ, α = min(…), komposisi MAX, tabel luas/momen centroid, dan interpretasi klik. |
-| **Resep** | Tampilan master-detail di tablet, pencarian & kategori, spesifikasi espresso + tombol "Kalibrasi shot ini", *Mode Seduh* layar penuh (checklist bahan, timer per langkah, layar tetap menyala). Head Barista dapat menambah/mengubah/menghapus resep. |
-| **Riwayat** | Semua sesi kalibrasi, grafik waktu ekstraksi per shot, kategori waktu (Under/Ideal/Over), status shot, dan **agreement rate** yang ditulis eksplisit (x / n × 100%) — Head Barista mencatat arah dan besar klik menurut dirinya per shot. Ekspor CSV (titik koma, koma desimal). |
-| **Kuesioner SUS** | 10 butir Tabel III.2 skala Likert 1–5, perhitungan skor per butir, subtotal ganjil/genap, × 2,5, rekap rata-rata, kategori Tabel III.3, ekspor CSV. |
-| **Pakar** | Basis pengetahuan: grafik fungsi keanggotaan + parameter (a, b, c, d) yang bisa diedit Head Barista dengan validasi, matriks 81 aturan yang bisa diubah per sel (untuk *member checking*), dan penjelasan metode. |
-| **Pengaturan** | Profil & kata sandi, tema terang/gelap, konfigurasi grinder (satuan dial, skala step, resolusi, arah angka), manajemen akun barista, cadangan/pulihkan JSON. |
+| **Beranda** | Setelah masuk: Modul 1 (Kalibrasi) dengan sesi berjalan, setting grinder sekarang, dan saran shot terakhir; Modul 2 (Resep) per kategori; tabel shot terakhir; daftar tugas Head Barista. |
+| **Kalibrasi** | Timer shot, stepper dose/yield/waktu, pemilih rasa, setting grinder (mendukung dial berklik maupun berangka desimal, mis. 2,2). Hasil berisi saran dalam bahasa meja bar ("Perkasar Putaran Grinder", +2 klik, 12 → 14), alasan singkat (mis. "Shot terlalu lambat, rasa pahit"), status terkalibrasi, perbandingan dengan shot sebelumnya, dan Catatan Head Barista. Tanpa rumus di layar barista. |
+| **Resep** | Daftar resep per kategori, spesifikasi espresso + tombol "Kalibrasi shot ini", SOP, dan *Mode Seduh* layar penuh. Head Barista dapat menambah/mengubah/menghapus resep. |
+| **Riwayat** | Semua sesi, grafik waktu ekstraksi, kategori waktu, status shot, dan kesesuaian sistem dengan Head Barista. Head Barista mengisi keputusan sendiri (arah + jumlah klik) per shot dan dapat membuka **Lihat perhitungan** (jejak Fuzzy Mamdani lengkap) untuk verifikasi. Ekspor CSV. |
+| **Head Barista** | Hanya untuk akun Head Barista: ringkasan penilaian shot, basis pengetahuan (himpunan fuzzy + 81 aturan, bisa diedit), kuesioner SUS (rekap & skor), konfigurasi grinder, akun barista, cadangan/pulihkan data. |
+| **Pengaturan** | Profil & kata sandi, tema terang/gelap, tentang aplikasi. |
 
-- **Peran**: *Head Barista* (kelola resep, basis pengetahuan, grinder, akun) dan *Barista*
-  (resep, kalibrasi, riwayat). Saat pertama dibuka, aplikasi meminta pembuatan akun Head Barista.
+**Alur kalibrasi ulang.** Saran dihitung dari hasil cangkir (dose, yield, waktu, rasa), bukan dari angka grinder.
+Setelah grinder diputar sesuai saran, tekan *Sudah diputar … lanjut shot berikutnya*: waktu dan rasa
+dikosongkan dan barista menarik shot baru. Bila setting diubah langsung di stepper setelah hasil keluar,
+aplikasi menjelaskan bahwa data rasa/waktu masih milik shot lama dan menawarkan lanjut ke shot berikutnya
+(atau mengoreksi setting shot yang sama). Saran baru "Pertahankan" baru muncul setelah shot baru memang
+seimbang dan masuk target waktu.
+
+**Dial desimal (mis. Latina 2,2).** Di menu Head Barista → Grinder: satuan `angka`, 1 step = `0,1`,
+resolusi `0,1`. Saran 2 step lalu tampil sebagai +0,2 (2,2 → 2,4).
+
+- **Peran**: *Head Barista* (menu Head Barista: penilaian shot, basis pengetahuan, SUS, grinder, akun,
+  cadangan data; juga kelola resep) dan *Barista* (resep, kalibrasi, riwayat, mengisi SUS). Saat pertama
+  dibuka, aplikasi meminta pembuatan akun Head Barista.
 - **Offline-first**: semua data tersimpan di perangkat (localStorage); versi web juga PWA sehingga bisa
   di-*install* dan jalan tanpa internet.
 - Detail mesin fuzzy, 81 aturan, contoh perhitungan manual, dan pemetaan skenario black-box ada di
@@ -71,8 +81,8 @@ gunakan *Build → Generate Signed Bundle/APK*.
 src/
   fuzzy/            mesin inferensi Mamdani, basis pengetahuan bawaan, rekomendasi & catatan barista, tes
   store/            state aplikasi (zustand + persist), tipe data, resep bawaan
-  pages/            Kalibrasi, Resep (+ editor, Mode Seduh), Riwayat, Pakar, Pengaturan, Login
-  components/       komponen UI ramah sentuhan, grafik SVG (fungsi keanggotaan, dial grinder)
+  pages/            Beranda, Kalibrasi, Resep (+ editor, Mode Seduh), Riwayat, Head Barista, Basis pengetahuan, SUS, Pengaturan, Login
+  components/       komponen UI ramah sentuhan, grafik SVG (fungsi keanggotaan, skala arah grind), jejak perhitungan
   lib/              autentikasi lokal (SHA-256 bersalt), ekspor berkas, statistik
 android/            proyek Capacitor Android
 docs/               dokumentasi Fuzzy Mamdani
@@ -83,6 +93,6 @@ Teknologi: React 19, TypeScript, Vite, Tailwind CSS 4, Zustand, Capacitor 8, Vit
 ## Catatan
 
 - Akun bersifat **lokal per perangkat** (pembagian peran di tablet bersama), bukan sistem keamanan
-  berbasis server. Pindahkan data antar-tablet lewat *Pengaturan → Cadangan (JSON)*.
+  berbasis server. Pindahkan data antar-tablet lewat *Head Barista → Data & cadangan (JSON)*.
 - Basis pengetahuan bawaan adalah titik awal yang disusun dari praktik umum espresso; nilai akhir
-  sebaiknya divalidasi bersama Head Barista di lokasi penelitian lalu disimpan lewat menu **Pakar**.
+  sebaiknya divalidasi bersama Head Barista di lokasi penelitian lalu disimpan lewat menu **Head Barista → Basis pengetahuan**.

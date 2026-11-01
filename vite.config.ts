@@ -25,7 +25,7 @@ export default defineConfig({
         name: 'Kalibrasi Kopi — Smart Barista Handbook',
         short_name: 'Kalibrasi Kopi',
         description: 'Resep & kalibrasi espresso dengan Logika Fuzzy Mamdani',
-        theme_color: '#2a1d15',
+        theme_color: '#1c1a17',
         background_color: '#16110e',
         display: 'standalone',
         orientation: 'any',

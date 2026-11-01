@@ -1,6 +1,6 @@
-import { Download, KeyRound, LogOut, Monitor, Moon, Plus, Sun, Trash2, Upload, UserCog } from 'lucide-react';
+import { ArrowRight, Download, KeyRound, LogOut, Monitor, Moon, Plus, Sun, Trash2, Upload, UserCog } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Badge, Button, Card, ConfirmDialog, Field, IconButton, Modal, PageHeader, Segmented, SectionTitle, Select, Switch, TextInput } from '../components/ui';
+import { Badge, Button, Card, ConfirmDialog, Field, IconButton, LinkButton, Modal, PageHeader, Segmented, SectionTitle, Select, Switch, TextInput } from '../components/ui';
 import { DEFAULT_GRINDER, type GrinderConfig } from '../fuzzy/advice';
 import { isValidEmail, verifyPassword } from '../lib/auth';
 import { readTextFile, saveTextFile, stamp } from '../lib/files';
@@ -13,16 +13,32 @@ export function SettingsPage() {
   const isHead = useIsHead();
   return (
     <>
-      <PageHeader title="Pengaturan" subtitle="Akun, grinder, tampilan, dan data perangkat" />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="space-y-4">
+      <PageHeader title="Pengaturan" subtitle="Akun dan tampilan di perangkat ini" />
+      <div className="grid max-w-5xl grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
           <ProfileCard />
           <ThemeCard />
-          <GrinderCard editable={isHead} />
         </div>
-        <div className="space-y-4">
-          {isHead && <UsersCard />}
-          <DataCard isHead={isHead} />
+        <div className="space-y-5">
+          {isHead ? (
+            <Card>
+              <SectionTitle>Pengaturan kedai</SectionTitle>
+              <p className="text-[15px] leading-relaxed text-muted">
+                Grinder, akun barista, cadangan data, basis pengetahuan, dan kuesioner SUS dikelola dari menu Head Barista.
+              </p>
+              <LinkButton to="/head-barista" variant="outline" className="mt-4">
+                Buka menu Head Barista <ArrowRight className="size-5" />
+              </LinkButton>
+            </Card>
+          ) : (
+            <Card>
+              <SectionTitle>Kuesioner SUS</SectionTitle>
+              <p className="text-[15px] leading-relaxed text-muted">Isi setelah mencoba seluruh skenario tugas aplikasi.</p>
+              <LinkButton to="/sus" variant="outline" className="mt-4">
+                Isi kuesioner <ArrowRight className="size-5" />
+              </LinkButton>
+            </Card>
+          )}
           <AboutCard />
         </div>
       </div>
@@ -39,7 +55,7 @@ function ProfileCard() {
     <Card>
       <SectionTitle>Profil</SectionTitle>
       <div className="flex items-center gap-4">
-        <div className="flex size-16 items-center justify-center rounded-full bg-brand text-xl font-bold text-brand-ink">{initials(user.name)}</div>
+        <div className="flex size-14 items-center justify-center rounded-full border border-line text-lg font-semibold">{initials(user.name)}</div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-xl font-semibold">{user.name}</div>
           <div className="truncate text-muted">{user.email}</div>
@@ -123,7 +139,7 @@ function ThemeCard() {
   );
 }
 
-function GrinderCard({ editable }: { editable: boolean }) {
+export function GrinderCard({ editable }: { editable: boolean }) {
   const grinder = useApp((s) => s.grinder);
   const saveGrinder = useApp((s) => s.saveGrinder);
   const [g, setG] = useState<GrinderConfig>(grinder);
@@ -136,8 +152,9 @@ function GrinderCard({ editable }: { editable: boolean }) {
   return (
     <Card>
       <SectionTitle>Grinder espresso</SectionTitle>
-      <p className="mb-4 text-sm text-muted">
-        Menerjemahkan keluaran fuzzy (step) ke angka pada dial grinder. Contoh: bila 1 step = 2 klik, rekomendasi 1,5 step menjadi 3 klik.
+      <p className="mb-4 text-sm leading-relaxed text-muted">
+        Menerjemahkan saran sistem ke angka pada dial grinder. Dial berklik: satuan "klik", 1 step = 1, resolusi 1. Dial berangka desimal (mis. 2,2):
+        satuan "angka", 1 step = 0,1, resolusi 0,1 — saran 2 step menjadi 0,2 (2,2 → 2,4).
       </p>
       <fieldset disabled={!editable} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Nama grinder">
@@ -158,7 +175,7 @@ function GrinderCard({ editable }: { editable: boolean }) {
             ))}
           </Select>
         </Field>
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3 sm:col-span-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-line px-4 py-3 sm:col-span-2">
           <div>
             <div className="font-semibold">Angka lebih kecil = lebih halus</div>
             <div className="text-sm text-muted">Matikan bila dial grinder Anda berkebalikan.</div>
@@ -187,14 +204,14 @@ function GrinderCard({ editable }: { editable: boolean }) {
           >
             Bawaan
           </Button>
-          {saved && <span className="text-sm font-semibold text-hold">Tersimpan ✓</span>}
+          {saved && <span className="text-sm font-semibold text-hold">Tersimpan</span>}
         </div>
       )}
     </Card>
   );
 }
 
-function UsersCard() {
+export function UsersCard() {
   const users = useApp((s) => s.users);
   const me = useCurrentUser();
   const removeUser = useApp((s) => s.removeUser);
@@ -217,7 +234,7 @@ function UsersCard() {
       <ul className="divide-y divide-line">
         {users.map((u) => (
           <li key={u.id} className="flex items-center gap-3 py-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-soft font-bold">{initials(u.name)}</div>
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line text-sm font-semibold">{initials(u.name)}</div>
             <div className="min-w-0 flex-1">
               <div className="truncate font-semibold">
                 {u.name} {u.id === me?.id && <span className="text-sm font-normal text-muted">(Anda)</span>}
@@ -356,7 +373,7 @@ function ResetPasswordModal({ user, onClose }: { user: User | null; onClose: () 
   );
 }
 
-function DataCard({ isHead }: { isHead: boolean }) {
+export function DataCard({ isHead }: { isHead: boolean }) {
   const importData = useApp((s) => s.importData);
   const resetAll = useApp((s) => s.resetAll);
   const sessions = useApp((s) => s.sessions);
@@ -443,7 +460,7 @@ function AboutCard() {
   return (
     <Card>
       <SectionTitle>Tentang</SectionTitle>
-      <p className="font-display text-xl font-semibold">Kalibrasi Kopi · Smart Assistant Digital Barista Handbook</p>
+      <p className="text-base font-semibold">Kalibrasi Kopi · Smart Assistant Digital Barista Handbook</p>
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
         Buku resep digital dan asisten kalibrasi espresso. Mesin inferensi Logika Fuzzy Mamdani dengan 4 input (dose, yield, waktu ekstraksi, profil rasa),
         1 output (penyesuaian grind size), {kb.rules.length} aturan, dan defuzzifikasi centroid. Antarmuka dirancang dengan pendekatan User-Centered Design untuk

@@ -44,7 +44,7 @@ function segmentFormula(s: CentroidSegment, output: FuzzyVariable): string {
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <div className="relative pl-11">
-      <div className="absolute top-0 left-0 flex size-8 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-ink">{n}</div>
+      <div className="tabular absolute top-0 left-0 flex size-8 items-center justify-center rounded-md border border-line text-sm font-semibold">{n}</div>
       <h3 className="mb-3 pt-1 font-semibold">{title}</h3>
       {children}
     </div>
@@ -52,10 +52,10 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 function Formula({ children }: { children: React.ReactNode }) {
-  return <div className="tabular rounded-2xl bg-surface-2 px-4 py-3 text-[15px] leading-relaxed">{children}</div>;
+  return <div className="tabular rounded-lg bg-surface-2 px-4 py-3 text-[15px] leading-relaxed">{children}</div>;
 }
 
-const th = 'px-3 py-2 text-left text-xs font-semibold tracking-wide text-muted uppercase';
+const th = 'px-3 py-2 text-left text-sm font-medium text-muted';
 const td = 'px-3 py-2 align-top';
 
 /**
@@ -88,7 +88,7 @@ export function FuzzyTrace({
             const v = kb.inputs[key];
             const x = result.inputs[key];
             return (
-              <div key={key} className="rounded-2xl border border-line p-3">
+              <div key={key} className="rounded-lg border border-line p-3">
                 <div className="flex items-baseline justify-between">
                   <span className="font-semibold">{v.label}</span>
                   <span className="tabular font-bold">
@@ -133,7 +133,7 @@ export function FuzzyTrace({
       </Step>
 
       <Step n={2} title={`Evaluasi aturan — ${result.fired.length} dari ${kb.rules.length} aturan aktif, α-predikat = MIN`}>
-        <div className="overflow-x-auto rounded-2xl border border-line">
+        <div className="overflow-x-auto rounded-lg border border-line">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-surface-2">
               <tr>
@@ -193,7 +193,7 @@ export function FuzzyTrace({
       </Step>
 
       <Step n={4} title="Defuzzifikasi — Centroid (Center of Area)">
-        <div className="mb-3 max-w-3xl rounded-2xl border border-line p-3">
+        <div className="mb-3 max-w-3xl rounded-lg border border-line p-3">
           <MembershipChart variable={kb.output} curve={result.curve} centroid={result.crisp} height={200} />
         </div>
         <Formula>
@@ -202,7 +202,7 @@ export function FuzzyTrace({
             Tiap segmen linear: Aᵢ = ½(μ₀ + μ₁)(z₁ − z₀), Mᵢ = (z₁ − z₀)/6 · [z₀(2μ₀ + μ₁) + z₁(μ₀ + 2μ₁)]
           </div>
         </Formula>
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-line">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-line">
           <table className="w-full min-w-[620px] text-sm">
             <thead className="bg-surface-2">
               <tr>

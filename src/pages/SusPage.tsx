@@ -1,5 +1,6 @@
-import { ClipboardList, Download, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Download, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Badge, Button, Card, ConfirmDialog, cx, EmptyState, Field, PageHeader, Segmented, SectionTitle, Snackbar, TextInput } from '../components/ui';
 import { saveTextFile, stamp, toCsv } from '../lib/files';
 import { fmtDateTime, fmtMath } from '../lib/format';
@@ -9,130 +10,104 @@ import { useApp, useCurrentUser, useIsHead } from '../store/useApp';
 
 type Tab = 'isi' | 'rekap';
 
-/** Kuesioner SUS (Tabel III.2) dengan perhitungan skor yang ditulis lengkap, untuk Bab IV. */
+/** Kuesioner SUS (Tabel III.2). Responden hanya melihat pernyataan; skor dan rekap hanya untuk Head Barista. */
 export function SusPage() {
   const responses = useApp((s) => s.susResponses);
-  const [tab, setTab] = useState<Tab>(responses.length ? 'rekap' : 'isi');
+  const isHead = useIsHead();
+  const [tab, setTab] = useState<Tab>(isHead && responses.length ? 'rekap' : 'isi');
   return (
     <>
-      <PageHeader title="Kuesioner SUS" subtitle="System Usability Scale · 10 butir pernyataan, skala Likert 1–5" />
-      <Segmented
-        value={tab}
-        onChange={setTab}
-        className="mb-5 w-full sm:w-auto"
-        options={[
-          { value: 'isi', label: 'Isi kuesioner' },
-          { value: 'rekap', label: `Rekapitulasi (${responses.length})` },
-        ]}
-      />
-      {tab === 'isi' ? <SusForm onSaved={() => setTab('rekap')} /> : <SusRecap responses={responses} />}
+      {isHead && (
+        <Link to="/head-barista" className="mb-2 inline-flex h-11 items-center gap-2 rounded-lg pr-3 font-semibold text-muted hover:text-ink">
+          <ArrowLeft className="size-5" /> Head Barista
+        </Link>
+      )}
+      <PageHeader title="Kuesioner SUS" subtitle="System Usability Scale · 10 pernyataan, skala 1–5" />
+      {isHead && (
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          className="mb-5 w-full sm:w-auto"
+          options={[
+            { value: 'isi', label: 'Isi kuesioner' },
+            { value: 'rekap', label: `Rekap (${responses.length})` },
+          ]}
+        />
+      )}
+      {tab === 'isi' || !isHead ? <SusForm /> : <SusRecap responses={responses} />}
     </>
   );
 }
 
-function SusForm({ onSaved }: { onSaved: () => void }) {
+function SusForm() {
   const user = useCurrentUser();
   const responses = useApp((s) => s.susResponses);
   const addSusResponse = useApp((s) => s.addSusResponse);
   const [respondent, setRespondent] = useState(`R${responses.length + 1}`);
   const [answers, setAnswers] = useState<(number | null)[]>(Array(10).fill(null));
-  const [snack, setSnack] = useState<string | null>(null);
-  const complete = isCompleteSus(answers);
-  const score = complete ? scoreSus(answers) : null;
+  const [snack, setSnack] = useState<{ text: string; tone: 'warn' | 'success' } | null>(null);
+  const answered = answers.filter((a) => a !== null).length;
 
   const save = () => {
     if (!respondent.trim() || !isCompleteSus(answers)) {
-      setSnack('Lengkapi kode responden dan seluruh 10 butir pernyataan.');
+      setSnack({ text: 'Lengkapi kode responden dan seluruh 10 butir pernyataan.', tone: 'warn' });
       return;
     }
     addSusResponse({ respondent: respondent.trim(), answers });
+    setSnack({ text: `Terima kasih. Jawaban ${respondent.trim()} tersimpan.`, tone: 'success' });
     setAnswers(Array(10).fill(null));
     setRespondent(`R${responses.length + 2}`);
-    onSaved();
+    document.getElementById('main-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div className="max-w-3xl">
       <Card>
-        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Kode / nama responden" hint={`Diisi oleh: ${user?.name ?? '-'}`}>
+        <div className="grid grid-cols-1 gap-4 border-b border-line pb-4 sm:grid-cols-2">
+          <Field label="Kode / nama responden" hint={`Dicatat oleh ${user?.name ?? '-'}`}>
             <TextInput value={respondent} onChange={(e) => setRespondent(e.target.value)} placeholder="mis. R1" />
           </Field>
+          <div className="text-sm leading-relaxed text-muted sm:pt-7">
+            1 = {LIKERT_LABELS[0]}
+            <br />5 = {LIKERT_LABELS[4]}
+          </div>
         </div>
-        <p className="mb-4 text-sm text-muted">1 = {LIKERT_LABELS[0]} · 2 = {LIKERT_LABELS[1]} · 3 = {LIKERT_LABELS[2]} · 4 = {LIKERT_LABELS[3]} · 5 = {LIKERT_LABELS[4]}</p>
-        <ol className="space-y-3">
+        <ol className="divide-y divide-line">
           {SUS_STATEMENTS.map((text, i) => (
-            <li key={i} className="rounded-2xl border border-line p-3">
-              <div className="flex gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-bold">{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] leading-relaxed">{text}</p>
-                  <div className="mt-2 grid grid-cols-5 gap-1.5" role="radiogroup" aria-label={`Butir ${i + 1}`}>
-                    {[1, 2, 3, 4, 5].map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        role="radio"
-                        aria-checked={answers[i] === v}
-                        title={LIKERT_LABELS[v - 1]}
-                        onClick={() => setAnswers((a) => a.map((x, j) => (j === i ? v : x)))}
-                        className={cx(
-                          'h-12 rounded-xl text-lg font-bold transition active:scale-95',
-                          answers[i] === v ? 'bg-brand text-brand-ink' : 'bg-surface-2 text-ink hover:bg-line/70',
-                        )}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <li key={i} className="py-4">
+              <p className="text-base leading-relaxed">
+                <span className="tabular mr-2 font-semibold text-muted">{i + 1}.</span>
+                {text}
+              </p>
+              <div className="mt-3 grid grid-cols-5 gap-1.5" role="radiogroup" aria-label={`Butir ${i + 1}`}>
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={answers[i] === v}
+                    title={LIKERT_LABELS[v - 1]}
+                    onClick={() => setAnswers((a) => a.map((x, j) => (j === i ? v : x)))}
+                    className={cx(
+                      'h-12 rounded-lg border text-lg font-semibold transition active:scale-[0.98]',
+                      answers[i] === v ? 'border-ink bg-ink text-bg' : 'border-line bg-surface text-ink hover:bg-surface-2',
+                    )}
+                  >
+                    {v}
+                  </button>
+                ))}
               </div>
             </li>
           ))}
         </ol>
+        <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm text-muted">{answered} dari 10 butir terjawab</span>
+          <Button size="lg" onClick={save}>
+            <Save className="size-5" /> Simpan jawaban
+          </Button>
+        </div>
       </Card>
-
-      <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
-        <Card>
-          <SectionTitle>Perhitungan skor</SectionTitle>
-          <table className="tabular w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs tracking-wide text-muted uppercase">
-                <th className="py-1.5">Butir</th>
-                <th className="py-1.5">Jawaban</th>
-                <th className="py-1.5">Rumus</th>
-                <th className="py-1.5 text-right">Skor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {answers.map((a, i) => (
-                <tr key={i} className="border-t border-line">
-                  <td className="py-1.5">P{i + 1}</td>
-                  <td className="py-1.5">{a ?? '–'}</td>
-                  <td className="py-1.5 text-muted">{a === null ? '–' : i % 2 === 0 ? `${a} − 1` : `5 − ${a}`}</td>
-                  <td className="py-1.5 text-right font-semibold">{a === null ? '–' : i % 2 === 0 ? a - 1 : 5 - a}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {score ? (
-            <div className="tabular mt-3 space-y-1 rounded-2xl bg-surface-2 px-4 py-3 text-[15px]">
-              <div>Subtotal ganjil = {score.converted.filter((_, i) => i % 2 === 0).join(' + ')} = {score.oddTotal}</div>
-              <div>Subtotal genap = {score.converted.filter((_, i) => i % 2 === 1).join(' + ')} = {score.evenTotal}</div>
-              <div>
-                SUS = ({score.oddTotal} + {score.evenTotal}) × 2,5 = <b className="text-lg">{fmtMath(score.score, 2)}</b>
-              </div>
-              <div className="text-muted">Kategori: {susCategory(score.score)}</div>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-muted">Skor muncul setelah ke-10 butir dijawab.</p>
-          )}
-        </Card>
-        <Button size="lg" className="w-full" onClick={save}>
-          <Save className="size-5" /> Simpan jawaban
-        </Button>
-      </div>
-      <Snackbar message={snack} onClose={() => setSnack(null)} />
+      <Snackbar message={snack?.text ?? null} tone={snack?.tone} onClose={() => setSnack(null)} />
     </div>
   );
 }
@@ -171,21 +146,21 @@ function SusRecap({ responses }: { responses: SusResponse[] }) {
             </Button>
           }
         >
-          Jawaban responden (skala Likert 1–5)
+          Jawaban responden
         </SectionTitle>
         <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
           <table className="tabular w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="text-left text-xs tracking-wide text-muted uppercase">
-                <th className="py-2 pr-2">Responden</th>
+              <tr className="text-left text-sm text-muted">
+                <th className="py-2 pr-2 font-medium">Responden</th>
                 {SUS_STATEMENTS.map((_, i) => (
-                  <th key={i} className="py-2 pr-2 text-center">
+                  <th key={i} className="py-2 pr-2 text-center font-medium">
                     P{i + 1}
                   </th>
                 ))}
-                <th className="py-2 pr-2 text-right">Jumlah (0–40)</th>
-                <th className="py-2 pr-2 text-right">Skor SUS</th>
-                <th className="py-2 pr-2">Kategori</th>
+                <th className="py-2 pr-2 text-right font-medium">Jumlah (0–40)</th>
+                <th className="py-2 pr-2 text-right font-medium">Skor SUS</th>
+                <th className="py-2 pr-2 font-medium">Kategori</th>
                 {isHead && <th className="py-2" />}
               </tr>
             </thead>
@@ -208,7 +183,7 @@ function SusRecap({ responses }: { responses: SusResponse[] }) {
                   </td>
                   {isHead && (
                     <td className="py-2 text-right">
-                      <button type="button" aria-label={`Hapus ${r.respondent}`} onClick={() => setDeleting(r)} className="rounded-lg p-2 text-danger hover:bg-danger/10">
+                      <button type="button" aria-label={`Hapus ${r.respondent}`} onClick={() => setDeleting(r)} className="rounded-md p-2 text-danger hover:bg-danger/10">
                         <Trash2 className="size-4" />
                       </button>
                     </td>
@@ -220,16 +195,15 @@ function SusRecap({ responses }: { responses: SusResponse[] }) {
         </div>
       </Card>
 
-      <Card>
-        <SectionTitle>Skor rata-rata</SectionTitle>
-        <div className="tabular rounded-2xl bg-surface-2 px-4 py-3 text-[15px] leading-relaxed">
-          Rata-rata SUS = ({rows.map(({ s }) => fmtMath(s.score, 2)).join(' + ')}) / {rows.length} = {fmtMath(sum, 2)} / {rows.length} ={' '}
-          <b className="text-lg">{fmtMath(mean, 2)}</b>
-          <div className="mt-1">
-            Kategori (Tabel III.3): <b>{susCategory(mean)}</b>
-          </div>
+      <Card className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+        <div>
+          <div className="text-sm text-muted">Skor rata-rata ({rows.length} responden)</div>
+          <div className="readout mt-1.5 text-[40px]">{fmtMath(mean, 2)}</div>
+          <div className="mt-1.5 font-semibold">{susCategory(mean)}</div>
         </div>
-        <p className="mt-3 text-sm text-muted">Kriteria: 85–100 Excellent / Grade A · 70–84 Good / Grade B · 68–69 Acceptable threshold · 50–67 Poor · &lt; 50 Not acceptable.</p>
+        <p className="text-sm leading-relaxed text-muted sm:border-l sm:border-line sm:pl-5">
+          Kategori Tabel III.3: 85–100 Excellent (Grade A) · 70–84 Good (Grade B) · 68–69 Acceptable threshold · 50–67 Poor · di bawah 50 Not acceptable.
+        </p>
       </Card>
 
       <ConfirmDialog

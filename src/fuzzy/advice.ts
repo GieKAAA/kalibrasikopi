@@ -87,15 +87,29 @@ export function timeCategory(result: InferenceResult): TimeCategory {
 }
 
 export const CALIBRATED_CRITERIA =
-  'Shot terkalibrasi bila (1) rekomendasi sistem Tetap, (2) rasa Seimbang dengan μ ≥ 0,5, dan (3) waktu ekstraksi Normal dengan μ ≥ 0,5. Bila salah satu tidak terpenuhi, shot belum terkalibrasi.';
+  'Shot terkalibrasi bila (1) saran sistem Tetap, (2) rasa Seimbang (derajat keanggotaan ≥ 0,5), dan (3) waktu ekstraksi masuk target Normal (derajat keanggotaan ≥ 0,5).';
 
-/** Status kalibrasi satu shot beserta alasan yang belum terpenuhi. */
+/** Status kalibrasi satu shot beserta alasan yang belum terpenuhi (bahasa meja bar, tanpa notasi). */
 export function calibrationStatus(result: InferenceResult, rec: Recommendation | null): { calibrated: boolean; unmet: string[] } {
   const unmet: string[] = [];
-  if (!rec || rec.direction !== 'tetap') unmet.push('rekomendasi bukan Tetap');
-  if ((result.fuzzified.taste.seimbang ?? 0) < 0.5) unmet.push('rasa belum Seimbang (μ < 0,5)');
-  if ((result.fuzzified.time.normal ?? 0) < 0.5) unmet.push('waktu di luar jendela Normal (μ < 0,5)');
+  if (!rec || rec.direction !== 'tetap') unmet.push('grinder masih perlu diputar');
+  if ((result.fuzzified.taste.seimbang ?? 0) < 0.5) unmet.push('rasa belum seimbang');
+  if ((result.fuzzified.time.normal ?? 0) < 0.5) unmet.push('waktu di luar target');
   return { calibrated: unmet.length === 0, unmet };
+}
+
+/** Satu kalimat diagnosis seperti yang diucapkan Head Barista, mis. "Shot terlalu lambat (33 detik; target 25–30), rasa pahit." */
+export function diagnosis(kb: KnowledgeBase, inputs: CrispInputs, cat: TimeCategory): string {
+  const t = normalTarget(kb, 'time');
+  const target = `target ${fmt(t.low, 0)}–${fmt(t.high, 0)}`;
+  const time = `${fmt(inputs.time)} detik`;
+  const timePart =
+    cat === 'Under'
+      ? `Shot terlalu cepat (${time}; ${target})`
+      : cat === 'Over'
+        ? `Shot terlalu lambat (${time}; ${target})`
+        : `Waktu masuk target (${time})`;
+  return `${timePart}, rasa ${tasteLabel(inputs.taste).toLowerCase()}.`;
 }
 
 export function tasteLabel(v: number): string {

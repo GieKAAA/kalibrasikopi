@@ -1,5 +1,4 @@
 import '@fontsource-variable/inter';
-import '@fontsource-variable/fraunces';
 import './index.css';
 import { Capacitor } from '@capacitor/core';
 import { StrictMode } from 'react';

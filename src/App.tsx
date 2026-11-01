@@ -5,6 +5,7 @@ import { AuthPage } from './pages/AuthPage';
 import { BrewModePage } from './pages/BrewModePage';
 import { CalibrationPage } from './pages/CalibrationPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { HeadBaristaPage } from './pages/HeadBaristaPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { RecipeEditorPage } from './pages/RecipeEditorPage';
@@ -20,7 +21,7 @@ function useThemeClass() {
     const apply = () => {
       const dark = theme === 'dark' || (theme === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#14100d' : '#f4eee5');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#121110' : '#f4f3ef');
     };
     apply();
     mq.addEventListener('change', apply);
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="/resep/:id/edit" element={<RecipeEditorPage />} />
                 <Route path="/riwayat" element={<HistoryPage />} />
                 <Route path="/riwayat/:id" element={<HistoryPage />} />
+                <Route path="/head-barista" element={<HeadBaristaPage />} />
                 <Route path="/pakar" element={<KnowledgeBasePage />} />
                 <Route path="/pengaturan" element={<SettingsPage />} />
                 <Route path="/sus" element={<SusPage />} />

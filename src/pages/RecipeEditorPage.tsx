@@ -99,7 +99,7 @@ function Editor() {
         }
       />
       {errors.length > 0 && (
-        <div className="mb-4 rounded-2xl bg-danger/10 px-4 py-3 text-danger">
+        <div className="mb-4 rounded-lg bg-danger/10 px-4 py-3 text-danger">
           {errors.map((e) => (
             <div key={e}>• {e}</div>
           ))}
@@ -187,7 +187,7 @@ function Editor() {
             {r.ingredients.map((ing, i) => {
               const set = (p: Partial<typeof ing>) => patch({ ingredients: r.ingredients.map((x) => (x.id === ing.id ? { ...x, ...p } : x)) });
               return (
-                <div key={ing.id} className="grid grid-cols-[1fr_88px_80px] gap-2 rounded-2xl border border-line p-3 sm:grid-cols-[2fr_100px_90px_2fr_auto]">
+                <div key={ing.id} className="grid grid-cols-[1fr_88px_80px] gap-2 rounded-lg border border-line p-3 sm:grid-cols-[2fr_100px_90px_2fr_auto]">
                   <TextInput aria-label="Nama bahan" placeholder="Nama bahan" value={ing.name} onChange={(e) => set({ name: e.target.value })} />
                   <TextInput aria-label="Jumlah" inputMode="decimal" placeholder="Jumlah" defaultValue={ing.amount === null ? '' : String(ing.amount).replace('.', ',')} onChange={(e) => set({ amount: numOrNull(e.target.value) })} />
                   <TextInput aria-label="Satuan" placeholder="g/ml" value={ing.unit} onChange={(e) => set({ unit: e.target.value })} />
@@ -219,8 +219,8 @@ function Editor() {
             {r.steps.map((st, i) => {
               const set = (p: Partial<typeof st>) => patch({ steps: r.steps.map((x) => (x.id === st.id ? { ...x, ...p } : x)) });
               return (
-                <div key={st.id} className="flex gap-3 rounded-2xl border border-line p-3">
-                  <span className="mt-2 flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-ink">{i + 1}</span>
+                <div key={st.id} className="flex gap-3 rounded-lg border border-line p-3">
+                  <span className="tabular mt-3 w-6 shrink-0 text-[15px] font-semibold text-muted">{i + 1}.</span>
                   <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[1fr_140px]">
                     <TextArea aria-label={`Langkah ${i + 1}`} rows={2} className="min-h-12" value={st.text} onChange={(e) => set({ text: e.target.value })} placeholder="Tuliskan instruksi…" />
                     <TextInput

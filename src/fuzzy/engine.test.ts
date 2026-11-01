@@ -154,10 +154,24 @@ describe('skenario black-box kalibrasi', () => {
     const fast = run(18, 50, 16, -2.5);
     expect(calibrationStatus(fast.result, fast.rec)).toEqual({
       calibrated: false,
-      unmet: ['rekomendasi bukan Tetap', 'rasa belum Seimbang (μ < 0,5)', 'waktu di luar jendela Normal (μ < 0,5)'],
+      unmet: ['grinder masih perlu diputar', 'rasa belum seimbang', 'waktu di luar target'],
     });
     expect(timeCategory(fast.result)).toBe('Under');
     expect(timeCategory(run(18, 36, 38, 3).result)).toBe('Over');
+  });
+
+  it('dial desimal (mis. 2,2): 1 step = 0,1 angka', () => {
+    const dial = { ...DEFAULT_GRINDER, name: 'Latina', unitLabel: 'angka', unitsPerStep: 0.1, resolution: 0.1 };
+    const slow = recommend(infer(kb, { dose: 18, yield: 36, time: 34, taste: 2.5 }), dial, 2.2)!;
+    expect(slow.direction).toBe('kasar');
+    expect(slow.amount).toBe(0.2);
+    expect(slow.newSetting).toBe(2.4);
+    const fast = recommend(infer(kb, { dose: 18, yield: 36, time: 21, taste: -1 }), dial, 2.2)!;
+    expect(fast.direction).toBe('halus');
+    expect(fast.newSetting).toBeLessThan(2.2);
+    const ok = recommend(infer(kb, { dose: 18, yield: 36, time: 28, taste: 0 }), dial, 2.2)!;
+    expect(ok.direction).toBe('tetap');
+    expect(ok.newSetting).toBe(2.2);
   });
 
   it('tanpa aturan → tidak ada rekomendasi', () => {

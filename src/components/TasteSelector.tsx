@@ -9,13 +9,16 @@ function tasteColor(v: number): string {
 }
 
 /** Pemilih profil rasa: preset linguistik (asam–seimbang–pahit) + slider halus −5…+5. */
-export function TasteSelector({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+export function TasteSelector({ value, onChange, highlight }: { value: number | null; onChange: (v: number) => void; highlight?: boolean }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface p-3">
-      <div className="mb-2 flex items-baseline justify-between px-1">
-        <span className="text-sm font-semibold text-muted">Profil rasa (cicip shot)</span>
-        <span className="text-sm font-semibold" style={{ color: value === null ? undefined : tasteColor(value) }}>
-          {value === null ? 'Belum dipilih' : `${tasteLabel(value)} · ${value > 0 ? '+' : ''}${fmtNum(value)}`}
+    <div className="py-3">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <span className="text-[15px] font-semibold">
+          Rasa
+          {highlight && value === null && <span className="ml-2 text-xs font-medium text-crema">belum diisi</span>}
+        </span>
+        <span className="text-sm font-semibold" style={{ color: value === null ? 'var(--muted)' : tasteColor(value) }}>
+          {value === null ? 'Cicipi lalu pilih' : `${tasteLabel(value)} (${value > 0 ? '+' : ''}${fmtNum(value)})`}
         </span>
       </div>
       <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
@@ -29,15 +32,11 @@ export function TasteSelector({ value, onChange }: { value: number | null; onCha
               onClick={() => onChange(p.value)}
               aria-pressed={active}
               className={cx(
-                'flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-0.5 text-center text-[12px] leading-tight font-semibold transition active:scale-95 sm:text-[13px]',
-                active ? 'text-white shadow-md' : 'border-transparent bg-surface-2 text-ink hover:border-line',
+                'flex min-h-14 items-center justify-center rounded-lg border px-1 text-center text-[13px] leading-tight font-semibold transition active:scale-[0.98]',
+                active ? 'text-bg' : 'border-line bg-surface text-ink hover:bg-surface-2',
               )}
-              style={active ? { background: color, borderColor: color } : undefined}
+              style={active ? { background: color, borderColor: color } : { boxShadow: `inset 0 -3px 0 ${color}` }}
             >
-              <span
-                className="mb-1 block size-2.5 rounded-full"
-                style={{ background: active ? 'white' : color, opacity: 0.35 + Math.min(Math.abs(p.value), 4) / 6 }}
-              />
               {p.label}
             </button>
           );
@@ -51,9 +50,9 @@ export function TasteSelector({ value, onChange }: { value: number | null; onCha
         value={value ?? 0}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label="Skala rasa, minus 5 sangat asam sampai plus 5 sangat pahit"
-        className={cx('taste-range mt-2 w-full', value === null && 'opacity-50')}
+        className={cx('taste-range mt-1 w-full', value === null && 'opacity-40')}
       />
-      <div className="flex justify-between px-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+      <div className="flex justify-between text-xs text-muted">
         <span>Asam −5</span>
         <span>Seimbang 0</span>
         <span>Pahit +5</span>
