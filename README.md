@@ -16,9 +16,11 @@ profil rasa), 1 variabel output (grind size), rule base IF–THEN, defuzzifikasi
 
 | Menu | Isi |
 |---|---|
-| **Kalibrasi** | Timer shot (tap Mulai/Stop), stepper besar untuk dose/yield/waktu, pemilih rasa (Sangat Asam … Sangat Pahit), setting grinder. Hasil: dial arah grinder, besar putaran & setting baru, *Catatan Head Barista*, dan **jejak perhitungan Mamdani** lengkap (fuzzifikasi → α-predikat → komposisi MAX → centroid). Setiap analisis tercatat sebagai shot dalam sesi dial-in. |
+| **Beranda** | Dashboard setelah masuk: pilih Modul 1 (Kalibrasi) atau Modul 2 (Resep), ringkasan shot terakhir, shot terkalibrasi, dan agreement rate. |
+| **Kalibrasi** | Timer shot (tap Mulai/Stop), stepper besar untuk dose/yield/waktu, pemilih rasa (Sangat Asam … Sangat Pahit), setting grinder. Hasil: kartu "Perhalus/Perkasar Putaran Grinder" dengan jumlah klik & setting baru, status shot (Terkalibrasi/Belum) beserta kriterianya, *Catatan Head Barista*, dan **jejak perhitungan Mamdani** yang bisa diverifikasi manual: parameter (a; b; c; d) + substitusi μ, α = min(…), komposisi MAX, tabel luas/momen centroid, dan interpretasi klik. |
 | **Resep** | Tampilan master-detail di tablet, pencarian & kategori, spesifikasi espresso + tombol "Kalibrasi shot ini", *Mode Seduh* layar penuh (checklist bahan, timer per langkah, layar tetap menyala). Head Barista dapat menambah/mengubah/menghapus resep. |
-| **Riwayat** | Semua sesi kalibrasi, grafik waktu ekstraksi per shot, statistik sesi terkalibrasi, dan **agreement rate** — Head Barista menandai keputusannya sendiri per shot untuk mengukur kesesuaian sistem dengan pakar. Ekspor CSV. |
+| **Riwayat** | Semua sesi kalibrasi, grafik waktu ekstraksi per shot, kategori waktu (Under/Ideal/Over), status shot, dan **agreement rate** yang ditulis eksplisit (x / n × 100%) — Head Barista mencatat arah dan besar klik menurut dirinya per shot. Ekspor CSV (titik koma, koma desimal). |
+| **Kuesioner SUS** | 10 butir Tabel III.2 skala Likert 1–5, perhitungan skor per butir, subtotal ganjil/genap, × 2,5, rekap rata-rata, kategori Tabel III.3, ekspor CSV. |
 | **Pakar** | Basis pengetahuan: grafik fungsi keanggotaan + parameter (a, b, c, d) yang bisa diedit Head Barista dengan validasi, matriks 81 aturan yang bisa diubah per sel (untuk *member checking*), dan penjelasan metode. |
 | **Pengaturan** | Profil & kata sandi, tema terang/gelap, konfigurasi grinder (satuan dial, skala step, resolusi, arah angka), manajemen akun barista, cadangan/pulihkan JSON. |
 
@@ -27,7 +29,9 @@ profil rasa), 1 variabel output (grind size), rule base IF–THEN, defuzzifikasi
 - **Offline-first**: semua data tersimpan di perangkat (localStorage); versi web juga PWA sehingga bisa
   di-*install* dan jalan tanpa internet.
 - Detail mesin fuzzy, 81 aturan, contoh perhitungan manual, dan pemetaan skenario black-box ada di
-  **[docs/fuzzy-mamdani.md](docs/fuzzy-mamdani.md)**.
+  **[docs/fuzzy-mamdani.md](docs/fuzzy-mamdani.md)**. Skenario black-box per teknik uji ada di
+  **[docs/pengujian-blackbox.md](docs/pengujian-blackbox.md)**, dan sinkronisasi dengan komentar draf
+  Revisi 2 di **[docs/sinkron-naskah-revisi-2.md](docs/sinkron-naskah-revisi-2.md)**.
 
 ## Menjalankan versi web
 

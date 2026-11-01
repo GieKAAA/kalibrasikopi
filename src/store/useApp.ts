@@ -6,7 +6,7 @@ import type { KnowledgeBase } from '../fuzzy/types';
 import { hashPassword, randomHex, uid } from '../lib/auth';
 import { seedRecipes } from './seedRecipes';
 import { RECIPE_CATEGORIES } from './types';
-import type { CalibrationDraft, CalibrationSession, Recipe, Role, Shot, ThemePref, User } from './types';
+import type { CalibrationDraft, CalibrationSession, Recipe, Role, Shot, SusResponse, ThemePref, User } from './types';
 
 export const DEFAULT_DRAFT: CalibrationDraft = { dose: 18, yield: 36, time: 0, taste: null, grindSetting: null };
 
@@ -20,6 +20,7 @@ interface Data {
   activeSessionId: string | null;
   draft: CalibrationDraft;
   theme: ThemePref;
+  susResponses: SusResponse[];
 }
 
 interface Actions {
@@ -42,7 +43,9 @@ interface Actions {
   /** Tambah shot ke sesi aktif, atau ganti bila id sama (analisis ulang shot yang sama). */
   upsertShot: (shot: Shot) => void;
   finishSession: () => void;
-  setExpertDecision: (sessionId: string, shotId: string, decision: Shot['expertDecision']) => void;
+  setExpertDecision: (sessionId: string, shotId: string, decision: Shot['expertDecision'], amount: number | null) => void;
+  addSusResponse: (r: Omit<SusResponse, 'id' | 'createdAt' | 'createdBy'>) => void;
+  deleteSusResponse: (id: string) => void;
   deleteSession: (id: string) => void;
 
   setTheme: (t: ThemePref) => void;
@@ -62,6 +65,7 @@ const initialData = (): Data => ({
   activeSessionId: null,
   draft: { ...DEFAULT_DRAFT },
   theme: 'system',
+  susResponses: [],
 });
 
 const now = () => new Date().toISOString();
@@ -152,12 +156,19 @@ export const useApp = create<AppState>()(
           activeSessionId: null,
           draft: { ...s.draft, time: 0, taste: null },
         })),
-      setExpertDecision: (sessionId, shotId, decision) =>
+      setExpertDecision: (sessionId, shotId, decision, amount) =>
         set((s) => ({
           sessions: s.sessions.map((x) =>
-            x.id !== sessionId ? x : { ...x, shots: x.shots.map((y) => (y.id === shotId ? { ...y, expertDecision: decision } : y)) },
+            x.id !== sessionId
+              ? x
+              : { ...x, shots: x.shots.map((y) => (y.id === shotId ? { ...y, expertDecision: decision, expertAmount: decision ? amount : null } : y)) },
           ),
         })),
+      addSusResponse: (r) =>
+        set((s) => ({
+          susResponses: [...s.susResponses, { ...r, id: uid(), createdAt: now(), createdBy: currentUserName(s) }],
+        })),
+      deleteSusResponse: (id) => set((s) => ({ susResponses: s.susResponses.filter((r) => r.id !== id) })),
       deleteSession: (id) =>
         set((s) => ({
           sessions: s.sessions.filter((x) => x.id !== id),
@@ -178,11 +189,17 @@ export const useApp = create<AppState>()(
     }),
     {
       name: 'kalibrasikopi:v1',
-      version: 2,
+      version: 3,
       // v2: kategori Manual Brew dihapus (di luar ruang lingkup penelitian).
+      // v3: satuan grinder bawaan menjadi "klik" (resolusi 1) dan modul kuesioner SUS.
       migrate: (persisted, version) => {
         const data = persisted as Data;
         if (version < 2 && Array.isArray(data?.recipes)) data.recipes = data.recipes.filter((r) => RECIPE_CATEGORIES.includes(r.category));
+        if (version < 3 && data) {
+          const g = data.grinder;
+          if (g && g.unitLabel === 'angka' && g.resolution === 0.5 && g.unitsPerStep === 1) data.grinder = { ...g, unitLabel: 'klik', resolution: 1 };
+          data.susResponses = data.susResponses ?? [];
+        }
         return data;
       },
       storage: createJSONStorage(() => localStorage),
@@ -196,6 +213,7 @@ export const useApp = create<AppState>()(
         activeSessionId: s.activeSessionId,
         draft: s.draft,
         theme: s.theme,
+        susResponses: s.susResponses,
       }),
     },
   ),
@@ -221,6 +239,7 @@ export function exportBackup(s: Data) {
       activeSessionId: s.activeSessionId,
       draft: s.draft,
       theme: s.theme,
+      susResponses: s.susResponses,
     },
   };
 }
@@ -242,6 +261,7 @@ function validateBackup(raw: unknown): Omit<Data, 'currentUserId'> {
     activeSessionId: d.activeSessionId ?? null,
     draft: { ...DEFAULT_DRAFT, ...d.draft },
     theme: d.theme ?? 'system',
+    susResponses: Array.isArray(d.susResponses) ? d.susResponses : [],
   };
 }
 

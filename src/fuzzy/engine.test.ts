@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { baristaNotes, DEFAULT_GRINDER, recommend } from './advice';
+import { baristaNotes, calibrationStatus, DEFAULT_GRINDER, recommend, timeCategory } from './advice';
 import { buildDefaultRules, createDefaultKnowledgeBase, expertConsequent } from './defaultKb';
 import { infer } from './engine';
 import { membership, validateVariable } from './membership';
@@ -145,6 +145,19 @@ describe('skenario black-box kalibrasi', () => {
       expect(z).toBeGreaterThanOrEqual(prev - 1e-9);
       prev = z;
     }
+  });
+
+  it('status kalibrasi & kategori waktu', () => {
+    const ok = run(18, 39, 29, 0);
+    expect(calibrationStatus(ok.result, ok.rec).calibrated).toBe(true);
+    expect(timeCategory(ok.result)).toBe('Ideal');
+    const fast = run(18, 50, 16, -2.5);
+    expect(calibrationStatus(fast.result, fast.rec)).toEqual({
+      calibrated: false,
+      unmet: ['rekomendasi bukan Tetap', 'rasa belum Seimbang (μ < 0,5)', 'waktu di luar jendela Normal (μ < 0,5)'],
+    });
+    expect(timeCategory(fast.result)).toBe('Under');
+    expect(timeCategory(run(18, 36, 38, 3).result)).toBe('Over');
   });
 
   it('tanpa aturan → tidak ada rekomendasi', () => {

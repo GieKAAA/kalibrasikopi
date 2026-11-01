@@ -16,9 +16,9 @@ export interface GrinderConfig {
 
 export const DEFAULT_GRINDER: GrinderConfig = {
   name: 'Grinder Espresso',
-  unitLabel: 'angka',
+  unitLabel: 'klik',
   unitsPerStep: 1,
-  resolution: 0.5,
+  resolution: 1,
   finerIsLower: true,
 };
 
@@ -62,8 +62,8 @@ export function recommend(
   const newSetting = currentSetting === null ? null : round(currentSetting + sign * amount, 4);
   const headline =
     direction === 'tetap'
-      ? 'Pertahankan setting grinder'
-      : `Putar grinder ke arah ${direction === 'halus' ? 'HALUS' : 'KASAR'}`;
+      ? 'Pertahankan Setting Grinder'
+      : `${direction === 'halus' ? 'Perhalus' : 'Perkasar'} Putaran Grinder`;
   return {
     direction,
     crisp: z,
@@ -74,6 +74,28 @@ export function recommend(
     headline,
     newSetting,
   };
+}
+
+export type TimeCategory = 'Under' | 'Ideal' | 'Over';
+
+const TIME_CATEGORY: Record<string, TimeCategory> = { cepat: 'Under', normal: 'Ideal', lambat: 'Over' };
+
+/** Kategori waktu ekstraksi dari himpunan waktu dengan derajat keanggotaan tertinggi. */
+export function timeCategory(result: InferenceResult): TimeCategory {
+  const entries = Object.entries(result.fuzzified.time).sort((a, b) => b[1] - a[1]);
+  return TIME_CATEGORY[entries[0]?.[0] ?? 'normal'] ?? 'Ideal';
+}
+
+export const CALIBRATED_CRITERIA =
+  'Shot terkalibrasi bila (1) rekomendasi sistem Tetap, (2) rasa Seimbang dengan μ ≥ 0,5, dan (3) waktu ekstraksi Normal dengan μ ≥ 0,5. Bila salah satu tidak terpenuhi, shot belum terkalibrasi.';
+
+/** Status kalibrasi satu shot beserta alasan yang belum terpenuhi. */
+export function calibrationStatus(result: InferenceResult, rec: Recommendation | null): { calibrated: boolean; unmet: string[] } {
+  const unmet: string[] = [];
+  if (!rec || rec.direction !== 'tetap') unmet.push('rekomendasi bukan Tetap');
+  if ((result.fuzzified.taste.seimbang ?? 0) < 0.5) unmet.push('rasa belum Seimbang (μ < 0,5)');
+  if ((result.fuzzified.time.normal ?? 0) < 0.5) unmet.push('waktu di luar jendela Normal (μ < 0,5)');
+  return { calibrated: unmet.length === 0, unmet };
 }
 
 export function tasteLabel(v: number): string {

@@ -1,3 +1,4 @@
+import { aggregateSegments } from './centroid';
 import { clamp, fuzzify, membership } from './membership';
 import type { CrispInputs, FiredRule, InferenceResult, InputKey, KnowledgeBase } from './types';
 
@@ -10,7 +11,8 @@ const SAMPLES = 601;
  * 1. Fuzzifikasi — nilai crisp → derajat keanggotaan tiap himpunan.
  * 2. Evaluasi aturan — α-predikat = MIN derajat anteseden (operator AND).
  * 3. Implikasi MIN + komposisi MAX — himpunan output dipotong setinggi α lalu digabung.
- * 4. Defuzzifikasi Centroid (COA) — z* = Σ z·μ(z) / Σ μ(z).
+ * 4. Defuzzifikasi Centroid (COA) — z* = ∫ z·μ(z) dz / ∫ μ(z) dz, dihitung eksak dari
+ *    luas dan momen tiap segmen linear daerah hasil agregasi.
  */
 export function infer(kb: KnowledgeBase, raw: CrispInputs): InferenceResult {
   const inputs = {} as CrispInputs;
@@ -40,8 +42,6 @@ export function infer(kb: KnowledgeBase, raw: CrispInputs): InferenceResult {
 
   const { min, max, terms } = kb.output;
   const curve: { z: number; mu: number }[] = [];
-  let numerator = 0;
-  let denominator = 0;
   for (let i = 0; i < SAMPLES; i++) {
     const z = min + ((max - min) * i) / (SAMPLES - 1);
     let mu = 0;
@@ -50,11 +50,13 @@ export function infer(kb: KnowledgeBase, raw: CrispInputs): InferenceResult {
       if (clip > 0) mu = Math.max(mu, Math.min(clip, membership(z, term.points)));
     }
     curve.push({ z, mu });
-    numerator += z * mu;
-    denominator += mu;
   }
 
-  const crisp = denominator > 0 ? numerator / denominator : null;
+  const segments = aggregateSegments(kb.output, clips);
+  const numerator = segments.reduce((sum, s) => sum + s.moment, 0);
+  const denominator = segments.reduce((sum, s) => sum + s.area, 0);
+
+  const crisp = denominator > 1e-12 ? numerator / denominator : null;
   const outputDegrees: Record<string, number> = {};
   let dominantTerm = null;
   if (crisp !== null) {
@@ -76,6 +78,7 @@ export function infer(kb: KnowledgeBase, raw: CrispInputs): InferenceResult {
     fired,
     clips,
     curve,
+    segments,
     crisp,
     outputDegrees,
     dominantTerm,

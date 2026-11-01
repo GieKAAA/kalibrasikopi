@@ -1,9 +1,11 @@
 import {
+  ArrowLeft,
   ArrowRight,
   BrainCircuit,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
+  CircleDashed,
   Coffee,
   Info,
   Plus,
@@ -11,27 +13,32 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { directionColor } from '../components/charts/colors';
 import { GrindGauge } from '../components/charts/GrindGauge';
 import { FuzzyTrace } from '../components/FuzzyTrace';
 import { NumberStepper } from '../components/NumberStepper';
 import { ShotTimer } from '../components/ShotTimer';
 import { TasteSelector } from '../components/TasteSelector';
-import { Badge, Button, Card, ConfirmDialog, cx, Field, Modal, PageHeader, SectionTitle, TextInput } from '../components/ui';
+import { Badge, Button, Card, ConfirmDialog, cx, Field, Modal, PageHeader, SectionTitle, Snackbar, TextInput } from '../components/ui';
 import {
   baristaNotes,
+  calibrationStatus,
+  CALIBRATED_CRITERIA,
   normalTarget,
   recommend,
   shotMetrics,
   tasteLabel,
+  timeCategory,
   type BaristaNote,
+  type TimeCategory,
   type Recommendation,
 } from '../fuzzy/advice';
 import { infer } from '../fuzzy/engine';
 import type { CrispInputs, InferenceResult } from '../fuzzy/types';
 import { uid } from '../lib/auth';
-import { fmtFixed, fmtNum, fmtTime } from '../lib/format';
+import { isDialedIn } from '../lib/stats';
+import { fmtFixed, fmtMath, fmtNum, fmtTime } from '../lib/format';
 import type { CalibrationSession, Shot } from '../store/types';
 import { useApp } from '../store/useApp';
 
@@ -42,6 +49,8 @@ interface Analysis {
   result: InferenceResult;
   rec: Recommendation | null;
   notes: BaristaNote[];
+  status: { calibrated: boolean; unmet: string[] };
+  timeCat: TimeCategory;
 }
 
 export function CalibrationPage() {
@@ -59,7 +68,16 @@ export function CalibrationPage() {
   const run = (inputs: CrispInputs, grindSetting: number | null, shotId: string): Analysis => {
     const result = infer(kb, inputs);
     const rec = recommend(result, grinder, grindSetting);
-    return { shotId, inputs, grindSetting, result, rec, notes: baristaNotes(kb, inputs, result, rec) };
+    return {
+      shotId,
+      inputs,
+      grindSetting,
+      result,
+      rec,
+      notes: baristaNotes(kb, inputs, result, rec),
+      status: calibrationStatus(result, rec),
+      timeCat: timeCategory(result),
+    };
   };
 
   // Pulihkan hasil analisis terakhir bila shot belum "diterapkan" (mis. setelah pindah tab).
@@ -77,7 +95,15 @@ export function CalibrationPage() {
   const doseTarget = normalTarget(kb, 'dose');
   const yieldTarget = normalTarget(kb, 'yield');
   const metrics = shotMetrics(draft.dose, draft.yield, draft.time);
-  const canAnalyze = draft.taste !== null && draft.time > 0;
+  const missing = [
+    draft.dose <= 0 && 'Dose',
+    draft.yield <= 0 && 'Yield',
+    draft.time <= 0 && 'Waktu',
+    draft.taste === null && 'Profil rasa',
+  ].filter(Boolean) as string[];
+  const [snack, setSnack] = useState<string | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const stale =
     analysis !== null &&
     (analysis.inputs.dose !== draft.dose ||
@@ -87,7 +113,10 @@ export function CalibrationPage() {
       analysis.grindSetting !== draft.grindSetting);
 
   const analyze = () => {
-    if (!canAnalyze || draft.taste === null) return;
+    if (missing.length || draft.taste === null) {
+      setSnack(`Silakan lengkapi semua parameter kalibrasi (${missing.join(', ')}).`);
+      return;
+    }
     if (!session) {
       const lastBean = sessions[0]?.beanName ?? 'House Blend';
       startSession(lastBean);
@@ -97,6 +126,8 @@ export function CalibrationPage() {
     const shotId = analysis?.shotId ?? uid();
     const a = run(inputs, draft.grindSetting, shotId);
     setAnalysis(a);
+    if (window.matchMedia('(max-width: 1023px)').matches)
+      window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     const shot: Shot = {
       id: shotId,
       createdAt: new Date().toISOString(),
@@ -108,6 +139,8 @@ export function CalibrationPage() {
       termLabel: a.rec?.termLabel ?? '-',
       newSetting: a.rec?.newSetting ?? null,
       topRules: a.result.fired.slice(0, 3).map((f) => ({ id: f.rule.id, alpha: f.alpha })),
+      timeCategory: a.timeCat,
+      calibrated: a.status.calibrated,
     };
     upsertShot(shot);
   };
@@ -148,7 +181,7 @@ export function CalibrationPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         {/* ── Kolom input ── */}
-        <div className="space-y-4">
+        <div className="scroll-mt-4 space-y-4" ref={formRef}>
           <Card className="space-y-3">
             <SectionTitle action={<Badge>Shot #{shotNo}</Badge>}>Parameter shot</SectionTitle>
             <ShotTimer targetRange={[timeTarget.low, timeTarget.high]} onStop={(s) => setDraft({ time: s })} />
@@ -158,9 +191,10 @@ export function CalibrationPage() {
               value={draft.dose}
               onChange={(v) => setDraft({ dose: v })}
               step={0.1}
-              min={5}
+              min={0}
               max={30}
               unit="g"
+              highlight={draft.dose <= 0}
             />
             <NumberStepper
               label="Yield"
@@ -168,9 +202,10 @@ export function CalibrationPage() {
               value={draft.yield}
               onChange={(v) => setDraft({ yield: v })}
               step={0.5}
-              min={5}
+              min={0}
               max={100}
               unit="g"
+              highlight={draft.yield <= 0}
             />
             <NumberStepper
               label="Waktu"
@@ -219,38 +254,26 @@ export function CalibrationPage() {
                 </button>
               </div>
             )}
-            <Button size="xl" className="w-full" disabled={!canAnalyze} onClick={analyze}>
+            <Button size="xl" className="w-full" onClick={analyze}>
               {stale ? <RefreshCw className="size-6" /> : <BrainCircuit className="size-6" />}
               {stale ? 'Analisis ulang' : 'Analisis shot'}
             </Button>
-            {!canAnalyze && (
-              <p className="text-center text-sm text-muted">
-                {draft.time <= 0 ? 'Isi waktu ekstraksi (pakai timer atau tombol +)' : 'Pilih profil rasa setelah mencicipi shot'}
-              </p>
-            )}
+            {missing.length > 0 && <p className="text-center text-sm text-muted">Belum diisi: {missing.join(', ')}</p>}
           </Card>
         </div>
 
         {/* ── Kolom hasil ── */}
-        <div className="space-y-4">
+        <div className="scroll-mt-4 space-y-4" ref={resultRef}>
           {analysis ? (
             <>
-              <ResultCard analysis={analysis} stale={stale} onApply={applyAndNext} unitLabel={grinder.unitLabel} />
+              <ResultCard
+                analysis={analysis}
+                stale={stale}
+                onApply={applyAndNext}
+                onBack={() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                unitLabel={grinder.unitLabel}
+              />
               <NotesCard notes={analysis.notes} />
-              <Card>
-                <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setShowTrace((v) => !v)} aria-expanded={showTrace}>
-                  <div>
-                    <div className="font-display text-xl font-semibold">Perhitungan Fuzzy Mamdani</div>
-                    <div className="text-sm text-muted">Fuzzifikasi → aturan → komposisi → centroid</div>
-                  </div>
-                  <ChevronDown className={cx('size-6 shrink-0 transition', showTrace && 'rotate-180')} />
-                </button>
-                {showTrace && (
-                  <div className="mt-5">
-                    <FuzzyTrace kb={kb} result={analysis.result} />
-                  </div>
-                )}
-              </Card>
             </>
           ) : (
             <GuideCard />
@@ -259,6 +282,24 @@ export function CalibrationPage() {
         </div>
       </div>
 
+      {analysis && (
+        <Card className="mt-6">
+          <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setShowTrace((v) => !v)} aria-expanded={showTrace}>
+            <div>
+              <div className="font-display text-xl font-semibold">Perhitungan Fuzzy Mamdani</div>
+              <div className="text-sm text-muted">Fuzzifikasi → evaluasi aturan → komposisi → defuzzifikasi centroid → interpretasi</div>
+            </div>
+            <ChevronDown className={cx('size-6 shrink-0 transition', showTrace && 'rotate-180')} />
+          </button>
+          {showTrace && (
+            <div className="mt-5">
+              <FuzzyTrace kb={kb} result={analysis.result} rec={analysis.rec} grinder={grinder} />
+            </div>
+          )}
+        </Card>
+      )}
+
+      <Snackbar message={snack} onClose={() => setSnack(null)} />
       <NewSessionModal open={newSessionOpen} onClose={() => setNewSessionOpen(false)} onStarted={() => setAnalysis(null)} />
       <ConfirmDialog
         open={finishOpen}
@@ -323,7 +364,19 @@ function SessionBar({ session }: { session: CalibrationSession | null }) {
   );
 }
 
-function ResultCard({ analysis, stale, onApply, unitLabel }: { analysis: Analysis; stale: boolean; onApply: () => void; unitLabel: string }) {
+function ResultCard({
+  analysis,
+  stale,
+  onApply,
+  onBack,
+  unitLabel,
+}: {
+  analysis: Analysis;
+  stale: boolean;
+  onApply: () => void;
+  onBack: () => void;
+  unitLabel: string;
+}) {
   const { rec, result } = analysis;
   if (!rec)
     return (
@@ -354,10 +407,10 @@ function ResultCard({ analysis, stale, onApply, unitLabel }: { analysis: Analysi
           </h2>
           {rec.direction !== 'tetap' ? (
             <p className="mt-2 text-lg">
-              Sekitar <b className="tabular">{fmtNum(rec.amount, 2)} {unitLabel}</b> ke arah {rec.direction}
+              Sebanyak <b className="tabular">{fmtNum(rec.amount, 2)} {unitLabel}</b> ke arah {rec.direction} (z* = {fmtMath(rec.crisp, 2)})
             </p>
           ) : (
-            <p className="mt-2 text-lg">Tidak perlu memutar grinder.</p>
+            <p className="mt-2 text-lg">Tidak perlu memutar grinder (z* = {fmtMath(rec.crisp, 2)}).</p>
           )}
           {analysis.grindSetting !== null && rec.newSetting !== null && (
             <div className="mt-3 inline-flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-2">
@@ -377,10 +430,30 @@ function ResultCard({ analysis, stale, onApply, unitLabel }: { analysis: Analysi
         <Badge className="tabular">z* = {fmtNum(rec.crisp, 2)} step</Badge>
         <Badge>{result.fired.length} aturan aktif</Badge>
         <Badge>Rasa: {tasteLabel(analysis.inputs.taste)}</Badge>
+        <Badge className="tabular">
+          Waktu {fmtMath(analysis.inputs.time, 1)} s ({analysis.timeCat})
+        </Badge>
       </div>
-      <Button size="lg" className="mt-5 w-full" onClick={onApply} disabled={stale}>
-        {rec.direction === 'tetap' ? 'Catat & tarik shot berikutnya' : 'Terapkan & tarik shot berikutnya'} <ArrowRight className="size-5" />
-      </Button>
+      <div
+        className={cx('mt-4 flex gap-3 rounded-2xl p-3.5', analysis.status.calibrated ? 'bg-hold/10' : 'bg-surface-2')}
+        title={CALIBRATED_CRITERIA}
+      >
+        {analysis.status.calibrated ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-hold" /> : <CircleDashed className="mt-0.5 size-5 shrink-0 text-muted" />}
+        <div className="text-sm">
+          <div className="font-semibold">{analysis.status.calibrated ? 'Status shot: Terkalibrasi' : 'Status shot: Belum terkalibrasi'}</div>
+          <div className="text-muted">
+            {analysis.status.calibrated ? 'Rekomendasi Tetap, rasa Seimbang, dan waktu Normal.' : `Karena ${analysis.status.unmet.join('; ')}.`}
+          </div>
+        </div>
+      </div>
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <Button size="lg" variant="secondary" onClick={onBack}>
+          <ArrowLeft className="size-5" /> Kembali ke input
+        </Button>
+        <Button size="lg" className="flex-1" onClick={onApply} disabled={stale}>
+          {rec.direction === 'tetap' ? 'Catat & tarik shot berikutnya' : 'Terapkan & tarik shot berikutnya'} <ArrowRight className="size-5" />
+        </Button>
+      </div>
     </Card>
   );
 }
@@ -466,7 +539,9 @@ function SessionShots({ session, unitLabel }: { session: CalibrationSession; uni
                 </div>
                 <div className="text-sm text-muted">
                   {tasteLabel(s.taste)}
+                  {s.timeCategory && ` · ${s.timeCategory}`}
                   {s.grindSetting !== null && ` · setting ${fmtNum(s.grindSetting, 2)}`}
+                  {isDialedIn(s) && <span className="font-semibold text-hold"> · Terkalibrasi</span>}
                 </div>
               </div>
               <span className="rounded-full px-3 py-1 text-sm font-semibold text-white" style={{ background: color }}>

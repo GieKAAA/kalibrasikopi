@@ -11,6 +11,16 @@ export function membership(x: number, [a, b, c, d]: MfPoints): number {
   return (d - x) / (d - c);
 }
 
+export type MembershipCase = 'outside' | 'rise' | 'plateau' | 'fall';
+
+/** Bagian fungsi trapesium yang dipakai untuk nilai x — dasar penulisan substitusi manual. */
+export function membershipCase(x: number, [a, b, c, d]: MfPoints): MembershipCase {
+  if (x < a || x > d) return 'outside';
+  if (x >= b && x <= c) return 'plateau';
+  if (x < b) return 'rise';
+  return 'fall';
+}
+
 export function clamp(x: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, x));
 }

@@ -4,11 +4,13 @@ import { AppShell } from './components/AppShell';
 import { AuthPage } from './pages/AuthPage';
 import { BrewModePage } from './pages/BrewModePage';
 import { CalibrationPage } from './pages/CalibrationPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { RecipeEditorPage } from './pages/RecipeEditorPage';
 import { RecipesPage } from './pages/RecipesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SusPage } from './pages/SusPage';
 import { useApp, useCurrentUser } from './store/useApp';
 
 function useThemeClass() {
@@ -39,7 +41,7 @@ export default function App() {
           element={
             <AppShell>
               <Routes>
-                <Route path="/" element={<Navigate to="/kalibrasi" replace />} />
+                <Route path="/" element={<DashboardPage />} />
                 <Route path="/kalibrasi" element={<CalibrationPage />} />
                 <Route path="/resep" element={<RecipesPage />} />
                 <Route path="/resep/baru" element={<RecipeEditorPage />} />
@@ -49,7 +51,8 @@ export default function App() {
                 <Route path="/riwayat/:id" element={<HistoryPage />} />
                 <Route path="/pakar" element={<KnowledgeBasePage />} />
                 <Route path="/pengaturan" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/kalibrasi" replace />} />
+                <Route path="/sus" element={<SusPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppShell>
           }

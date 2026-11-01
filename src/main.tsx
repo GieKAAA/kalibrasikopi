@@ -12,6 +12,16 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-if (!Capacitor.isNativePlatform()) {
+if (Capacitor.isNativePlatform()) {
+  // Tombol Kembali Android: mundur satu halaman; di halaman awal aplikasi diminimalkan, bukan ditutup paksa.
+  import('@capacitor/app')
+    .then(({ App }) =>
+      App.addListener('backButton', ({ canGoBack }) => {
+        if (canGoBack) window.history.back();
+        else App.minimizeApp();
+      }),
+    )
+    .catch(() => undefined);
+} else {
   import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true })).catch(() => undefined);
 }

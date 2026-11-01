@@ -54,26 +54,30 @@ function LoginForm() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      setError('Form tidak boleh kosong.');
+      return;
+    }
     const user = users.find((u) => u.email === email.trim().toLowerCase());
     if (!user || !verifyPassword(password, user.salt, user.passwordHash)) {
       setError('Email atau kata sandi salah.');
       return;
     }
-    window.location.hash = '#/kalibrasi';
+    window.location.hash = '#/';
     setCurrentUser(user.id);
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} noValidate className="space-y-5">
       <div>
         <h2 className="font-display text-3xl font-semibold">Masuk</h2>
         <p className="mt-1 text-muted">Gunakan akun barista yang dibuat oleh Head Barista.</p>
       </div>
       <Field label="Email">
-        <TextInput type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nama@kedai.id" required />
+        <TextInput type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nama@kedai.id" />
       </Field>
       <Field label="Kata sandi" error={error}>
-        <TextInput type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <TextInput type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <Button type="submit" size="lg" className="w-full">
         <LogIn className="size-5" /> Masuk
@@ -93,16 +97,17 @@ function SetupForm() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return setError('Nama wajib diisi.');
+    if (!name.trim() || !email.trim() || !password || !confirm) return setError('Form tidak boleh kosong.');
     if (!isValidEmail(email)) return setError('Format email tidak valid.');
     if (password.length < 6) return setError('Kata sandi minimal 6 karakter.');
     if (password !== confirm) return setError('Konfirmasi kata sandi tidak sama.');
     const user = createUser({ name, email, password, role: 'head' });
+    window.location.hash = '#/';
     setCurrentUser(user.id);
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} noValidate className="space-y-4">
       <div>
         <h2 className="font-display text-3xl font-semibold">Selamat datang</h2>
         <p className="mt-1 text-muted">
@@ -110,17 +115,17 @@ function SetupForm() {
         </p>
       </div>
       <Field label="Nama lengkap">
-        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Andi Head Barista" required />
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Andi Head Barista" />
       </Field>
       <Field label="Email">
-        <TextInput type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="head@kedai.id" required />
+        <TextInput type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="head@kedai.id" />
       </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Kata sandi">
-          <TextInput type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <TextInput type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <Field label="Ulangi kata sandi">
-          <TextInput type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+          <TextInput type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </Field>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}

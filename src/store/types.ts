@@ -1,4 +1,4 @@
-import type { Direction } from '../fuzzy/advice';
+import type { Direction, TimeCategory } from '../fuzzy/advice';
 
 export type Role = 'head' | 'barista';
 
@@ -67,8 +67,14 @@ export interface Shot {
   newSetting: number | null;
   /** Aturan dengan α tertinggi, untuk jejak audit. */
   topRules: { id: string; alpha: number }[];
+  /** Kategori waktu ekstraksi: Under (cepat), Ideal (normal), Over (lambat). */
+  timeCategory?: TimeCategory;
+  /** Status kalibrasi shot menurut CALIBRATED_CRITERIA. */
+  calibrated?: boolean;
   /** Keputusan Head Barista untuk shot yang sama — dasar perhitungan agreement rate. */
   expertDecision?: Direction | null;
+  /** Besar putaran menurut Head Barista (satuan dial grinder). */
+  expertAmount?: number | null;
 }
 
 export interface CalibrationSession {
@@ -91,3 +97,12 @@ export interface CalibrationDraft {
 }
 
 export type ThemePref = 'system' | 'light' | 'dark';
+
+/** Satu jawaban kuesioner System Usability Scale (10 butir, skala Likert 1–5). */
+export interface SusResponse {
+  id: string;
+  respondent: string;
+  answers: number[];
+  createdAt: string;
+  createdBy: string;
+}

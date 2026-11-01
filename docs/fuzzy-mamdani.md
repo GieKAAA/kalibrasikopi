@@ -34,7 +34,7 @@ Sangat Asam (−4), Asam (−2,5), Sedikit Asam (−1), Seimbang (0), Sedikit Pa
 Sangat Pahit (+4), serta slider untuk nilai di antaranya.
 
 Output negatif berarti **putar ke arah halus**, positif **ke arah kasar**. Satu *step* diterjemahkan
-ke satuan dial grinder lewat menu Pengaturan (mis. 1 step = 1 angka atau 2 klik), lalu dibulatkan
+ke satuan dial grinder lewat menu Pengaturan (bawaan 1 step = 1 klik; bisa diubah, mis. 1 step = 2 klik), lalu dibulatkan
 sesuai resolusi dial. Bila |z*| < 0,25 step, rekomendasinya **pertahankan setting**.
 
 ## 2. Logika Head Barista (pembentuk rule base)
@@ -157,8 +157,13 @@ Format: **JIKA** Dose … **DAN** Yield … **DAN** Waktu … **DAN** Rasa … *
 2. **Evaluasi aturan** — α-predikat tiap aturan = `MIN(μ_dose, μ_yield, μ_waktu, μ_rasa)`.
 3. **Implikasi & komposisi** — himpunan output dipotong setinggi α (MIN); potongan dari semua
    aturan digabung dengan MAX: `μ_agr(z) = max_i min(α_i, μ_Ci(z))`.
-4. **Defuzzifikasi centroid (COA)** — `z* = Σ z·μ_agr(z) / Σ μ_agr(z)`, dihitung numerik pada
-   601 titik sampel (Δz = 0,01) di rentang −3…+3.
+4. **Defuzzifikasi centroid (COA)** — `z* = ∫ z·μ_agr(z) dz / ∫ μ_agr(z) dz`, dihitung **eksak**:
+   daerah hasil agregasi dipecah menjadi segmen linear, lalu tiap segmen menyumbang
+   luas `A = ½(μ₀ + μ₁)(z₁ − z₀)` dan momen `M = (z₁ − z₀)/6 · [z₀(2μ₀ + μ₁) + z₁(μ₀ + 2μ₁)]`,
+   sehingga `z* = ΣM / ΣA` (lihat [`src/fuzzy/centroid.ts`](../src/fuzzy/centroid.ts)).
+5. **Interpretasi** — |z*| × skala grinder dibulatkan ke resolusi dial (bawaan: 1 step = 1 klik).
+   Bila |z*| < 0,25 → *Pertahankan Setting Grinder*; z* < 0 → *Perhalus Putaran Grinder*;
+   z* > 0 → *Perkasar Putaran Grinder*.
 
 ## 5. Contoh perhitungan
 
@@ -174,18 +179,26 @@ Format: **JIKA** Dose … **DAN** Yield … **DAN** Waktu … **DAN** Rasa … *
 Aturan aktif: **R37** — JIKA Dose Normal DAN Yield Normal DAN Waktu Cepat DAN Rasa Asam MAKA
 Grind Jauh Lebih Halus, α = min(1; 1; 1; 0,833) = **0,833**.
 
-Himpunan *Jauh Lebih Halus* dipotong pada 0,833, lalu
-z* = Σ z·μ(z) / Σ μ(z) = −290,215 / 132,360 = **−2,193 step** → *putar grinder ke arah HALUS
-±2 angka* (1 step = 1 angka, resolusi 0,5). Setting 12 → 10.
+Himpunan *Jauh Lebih Halus* (−3; −3; −2; −1) dipotong pada α = 0,833. Garis potong bertemu sisi turun
+μ = (−1 − z)/(−1 − (−2)) pada z = −1 − 0,833 = −1,833, sehingga daerah agregasi terdiri atas dua segmen:
+
+| Segmen | Rentang z | μ(z) | Luas A | Momen M |
+|---|---|---|---|---|
+| 1 (dipotong α) | −3 ≤ z ≤ −1,833 | 0,833 | 0,9722 | −2,3495 |
+| 2 (sisi turun) | −1,833 ≤ z ≤ −1 | (−1 − z)/1 | 0,3472 | −0,5401 |
+| **Jumlah** | | | **1,3194** | **−2,8897** |
+
+z* = ΣM / ΣA = −2,8897 / 1,3194 = **−2,190 step** → *Perhalus Putaran Grinder 2 klik*
+(1 step = 1 klik, resolusi 1). Setting 12 → 10.
 
 Contoh lain (hasil dari mesin yang sama, dapat diulang di menu Kalibrasi → *Perhitungan Fuzzy Mamdani*):
 
 | Dose | Yield | Waktu | Rasa | Aturan aktif (α) | z* | Rekomendasi |
 |---|---|---|---|---|---|---|
 | 18 | 36 | 28 | 0 | R41 Tetap (1) | 0,000 | Pertahankan |
-| 18 | 36 | 28 | −1 | R41 Tetap (0,5); R40 Lebih Halus (0,333) | −0,410 | Halus 0,5 |
-| 18 | 36 | 32 | −2,5 | R43 Tetap (0,667); R40 Lebih Halus (0,333) | −0,364 | Halus 0,5 + catatan channeling |
-| 18 | 36 | 38 | +3 | R45 Jauh Lebih Kasar (1) | +2,225 | Kasar 2 |
+| 18 | 36 | 28 | −1 | R41 Tetap (0,5); R40 Lebih Halus (0,333) | −0,410 | Perhalus 1 klik |
+| 18 | 36 | 32 | −2,5 | R43 Tetap (0,667); R40 Lebih Halus (0,333) | −0,364 | Perhalus 1 klik + catatan channeling |
+| 18 | 36 | 38 | +3 | R45 Jauh Lebih Kasar (1) | +2,222 | Perkasar 2 klik |
 | 20 | 40 | 30 | 0 | R68 Tetap (0,5); R77 Tetap (0,5) | 0,000 | Pertahankan + catatan dose |
 
 ## 6. Catatan Head Barista (aturan tegas pendamping)

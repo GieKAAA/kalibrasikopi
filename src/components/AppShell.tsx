@@ -1,4 +1,4 @@
-import { BookOpen, BrainCircuit, Gauge, History, Settings } from 'lucide-react';
+import { BookOpen, BrainCircuit, Gauge, History, House, Settings } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { initials } from '../lib/format';
@@ -7,6 +7,7 @@ import { LogoMark } from './Logo';
 import { cx } from './ui';
 
 const NAV = [
+  { to: '/', label: 'Beranda', icon: House },
   { to: '/kalibrasi', label: 'Kalibrasi', icon: Gauge },
   { to: '/resep', label: 'Resep', icon: BookOpen },
   { to: '/riwayat', label: 'Riwayat', icon: History },
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavLink
               key={to}
               to={to}
+              end={to === '/'}
               className={({ isActive }) =>
                 cx(
                   'group flex w-20 flex-col items-center gap-1 rounded-2xl py-2.5 text-xs font-semibold transition',
@@ -72,10 +74,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Bottom navigation — ponsel */}
       <nav aria-label="Navigasi utama" className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden">
         <div className="grid grid-cols-5">
-          {[...NAV, { to: '/pengaturan', label: 'Akun', icon: Settings }].map(({ to, label, icon: Icon }) => (
+          {[...NAV.filter((n) => n.to !== '/pakar'), { to: '/pengaturan', label: 'Akun', icon: Settings }].map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
+              end={to === '/'}
               className={({ isActive }) => cx('flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold', isActive ? 'text-ink' : 'text-muted')}
             >
               {({ isActive }) => (

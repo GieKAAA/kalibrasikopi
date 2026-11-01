@@ -31,6 +31,17 @@ describe('statistik kalibrasi', () => {
     expect(agreement([s])).toEqual({ judged: 3, agreed: 2, rate: (2 / 3) * 100 });
     expect(agreement([]).rate).toBeNull();
   });
+  it('besar putaran pakar ikut dibandingkan', () => {
+    const s = session([
+      shot({ direction: 'halus', amount: 1, expertDecision: 'halus', expertAmount: 1 }),
+      shot({ direction: 'halus', amount: 1, expertDecision: 'halus', expertAmount: 2 }),
+      shot({ direction: 'tetap', amount: 0, expertDecision: 'tetap', expertAmount: 0 }),
+    ]);
+    expect(agreement([s])).toEqual({ judged: 3, agreed: 2, rate: (2 / 3) * 100 });
+  });
+  it('status tersimpan pada shot diutamakan', () => {
+    expect(sessionDialedIn(session([shot({ direction: 'tetap', taste: 0, calibrated: false })]))).toBe(false);
+  });
   it('sesi terkalibrasi bila shot terakhir tetap & seimbang', () => {
     expect(sessionDialedIn(session([shot({ direction: 'halus', taste: -2 }), shot({})]))).toBe(true);
     expect(sessionDialedIn(session([shot({ direction: 'tetap', taste: -2 })]))).toBe(false);

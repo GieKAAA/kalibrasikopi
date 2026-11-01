@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import { Link, type LinkProps } from 'react-router-dom';
-import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
@@ -181,7 +181,15 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 
 export function Badge({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cx('inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-muted', className)}>
+    <span
+      className={cx(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
+        // Warna bawaan hanya bila pemanggil tidak memberi warna sendiri (menghindari bentrok kelas).
+        !/(^|\s)bg-/.test(className ?? '') && 'bg-surface-2',
+        !/(^|\s)text-(?!xs|sm|base)/.test(className ?? '') && 'text-muted',
+        className,
+      )}
+    >
       {children}
     </span>
   );
@@ -285,6 +293,33 @@ export function EmptyState({ icon, title, children, action }: { icon: ReactNode;
       <h3 className="font-display text-xl font-semibold">{title}</h3>
       {children && <p className="max-w-md text-muted">{children}</p>}
       {action}
+    </div>
+  );
+}
+
+/** Pesan singkat di bagian bawah layar yang hilang sendiri setelah beberapa detik. */
+export function Snackbar({ message, onClose, tone = 'warn' }: { message: string | null; onClose: () => void; tone?: 'warn' | 'success' }) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!message) return;
+    const t = window.setTimeout(() => closeRef.current(), 3500);
+    return () => window.clearTimeout(t);
+  }, [message]);
+  if (!message) return null;
+  return (
+    <div role="status" aria-live="polite" className="safe-bottom pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex justify-center px-4 md:bottom-6">
+      <div
+        className={cx(
+          'pointer-events-auto flex max-w-lg items-center gap-3 rounded-2xl px-5 py-3.5 text-[15px] font-semibold text-white shadow-2xl',
+          tone === 'warn' ? 'bg-[#3a2416]' : 'bg-hold',
+        )}
+      >
+        {message}
+        <button type="button" onClick={onClose} className="ml-2 rounded-lg px-2 py-1 text-sm text-white/80 hover:bg-white/10">
+          Tutup
+        </button>
+      </div>
     </div>
   );
 }

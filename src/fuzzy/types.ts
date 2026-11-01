@@ -55,12 +55,35 @@ export interface InferenceResult {
   clips: Record<string, number>;
   /** Sampel kurva agregat untuk grafik. */
   curve: { z: number; mu: number }[];
+  /** Segmen linear daerah hasil agregasi, dasar perhitungan luas & momen centroid. */
+  segments: CentroidSegment[];
   /** Hasil defuzzifikasi centroid; null bila tidak ada aturan yang aktif. */
   crisp: number | null;
   /** Derajat keanggotaan nilai crisp pada tiap himpunan output. */
   outputDegrees: Record<string, number>;
   /** Himpunan output dengan derajat tertinggi pada nilai crisp. */
   dominantTerm: FuzzyTerm | null;
+  /** Σ momen = ∫ z·μ(z) dz. */
   numerator: number;
+  /** Σ luas = ∫ μ(z) dz. */
   denominator: number;
+}
+
+/** Bagian kurva yang membentuk tiap segmen: dipotong α (datar), sisi naik, atau sisi turun himpunan. */
+export type SegmentPiece = 'clip' | 'rise' | 'fall';
+
+export interface CentroidSegment {
+  z0: number;
+  z1: number;
+  /** μ di ujung kiri dan kanan segmen (μ linear di antaranya). */
+  m0: number;
+  m1: number;
+  /** Luas = ∫ μ(z) dz pada segmen. */
+  area: number;
+  /** Momen = ∫ z·μ(z) dz pada segmen. */
+  moment: number;
+  termKey: string;
+  piece: SegmentPiece;
+  /** Tinggi potongan himpunan (α hasil komposisi MAX). */
+  clip: number;
 }

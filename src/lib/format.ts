@@ -33,3 +33,17 @@ export function initials(name: string): string {
 export function parseDecimal(s: string): number {
   return Number(s.replace(',', '.').trim());
 }
+
+/** Angka untuk penulisan rumus: koma desimal (PUEBI), tanda minus "−", tanpa pemisah ribuan. */
+export function fmtMath(x: number, digits = 3): string {
+  if (!Number.isFinite(x)) return '–';
+  const v = Math.abs(x) < 0.5 * 10 ** -digits ? 0 : x;
+  const s = Math.abs(v).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: digits, useGrouping: false });
+  return v < 0 ? `−${s}` : s;
+}
+
+/** Seperti fmtMath, tetapi bilangan negatif diberi kurung — untuk substitusi ke dalam rumus. */
+export function fmtSub(x: number, digits = 3): string {
+  const s = fmtMath(x, digits);
+  return s.startsWith('−') ? `(${s})` : s;
+}
